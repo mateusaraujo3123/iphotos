@@ -9,7 +9,7 @@
 // Enquanto estiver vazia/local, o site inteiro continua abrindo normalmente
 // (index, login, cadastro, painéis) — só as chamadas de API vão falhar
 // mostrando um erro amigável, nada quebra.
-const API_URL = window.IPHOTOS_API_URL || "http://localhost:3000/api";
+const API_URL = window.IPHOTOS_API_URL || "iphotos-production.up.railway.app/api";
 
 const AuthStorage = {
   getToken: () => localStorage.getItem('iphotos_token'),
