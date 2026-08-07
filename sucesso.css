@@ -1,0 +1,162 @@
+/* VARIÁVEIS COM A SUA IDENTIDADE VISUAL */
+:root {
+  --cor-fundo-geral: #f8fafc;       
+  --cor-texto-principal: #111827;   
+  --cor-topo-fundo: #000000;        
+  --cor-topo-texto: #ffffff;        
+  --cor-primaria: #00b4d8;          
+  --cor-primaria-hover: #0077b6;    
+  --cor-card-fundo: #ffffff;        
+  --cor-card-borda: #e2e8f0;        
+}
+
+/* ESTILOS BASE */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+body {
+  background-color: var(--cor-fundo-geral);
+  color: var(--cor-texto-principal);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Header */
+.meu-header {
+  background-color: var(--cor-topo-fundo);
+  color: var(--cor-topo-texto);
+  padding: 15px 30px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.logo {
+  font-size: 24px;
+  font-weight: 900;
+  letter-spacing: 1px;
+  text-decoration: none;
+  color: var(--cor-topo-texto);
+}
+
+.logo span {
+  color: var(--cor-primaria);
+}
+
+/* Container Central */
+.container-sucesso {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+}
+
+.card-sucesso {
+  background-color: var(--cor-card-fundo);
+  border: 1px solid var(--cor-card-borda);
+  border-radius: 16px;
+  width: 100%;
+  max-width: 500px;
+  padding: 40px;
+  text-align: center;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.03);
+}
+
+/* Ícone de Sucesso Animado por Feedback Visual */
+.icone-sucesso-wrapper {
+  width: 80px;
+  height: 80px;
+  background-color: #dcfce7;
+  color: #166534;
+  font-size: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 24px auto;
+}
+
+.card-sucesso h2 {
+  font-size: 24px;
+  font-weight: 800;
+  margin-bottom: 8px;
+}
+
+.card-sucesso p {
+  font-size: 15px;
+  color: #64748b;
+  line-height: 1.5;
+  margin-bottom: 30px;
+}
+
+/* Bloco de Detalhes do Pedido */
+.resumo-pedido-caixa {
+  background-color: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 30px;
+  text-align: left;
+}
+
+.linha-detalhe {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  margin-bottom: 8px;
+  color: #475569;
+}
+
+.linha-detalhe:last-child {
+  margin-bottom: 0;
+}
+
+.linha-detalhe strong {
+  color: var(--cor-texto-principal);
+}
+
+/* Botões de Ação Visuais */
+.btn-sucesso-principal {
+  display: block;
+  width: 100%;
+  background-color: var(--cor-primaria);
+  color: white;
+  border: none;
+  padding: 14px;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 0.2s;
+  margin-bottom: 12px;
+}
+
+.btn-sucesso-principal:hover {
+  background-color: var(--cor-primaria-hover);
+}
+
+.btn-sucesso-secundario {
+  display: block;
+  width: 100%;
+  background-color: transparent;
+  color: #475569;
+  border: 1px solid #cbd5e1;
+  padding: 12px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.btn-sucesso-secundario:hover {
+  background-color: #f1f5f9;
+}

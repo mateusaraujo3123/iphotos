@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mural de Fotos - iphotos</title>
+  <!-- Link direcionado para o novo arquivo de estilo separado -->
+  <link rel="stylesheet" href="evento.css">
+  <script src="api-config.js"></script>
+</head>
+<body>
+
+  <!-- HEADER -->
+  <header class="meu-header">
+    <a href="index.html" class="logo">iphoto<span>s</span></a>
+    <nav class="menu-links">
+      <a href="index.html">Voltar para a Vitrine</a>
+      <a href="carrinho.html">🛒 Carrinho (<span id="contador-carrinho">0</span>)</a>
+    </nav>
+  </header>
+
+  <!-- BANNER DO EVENTO SELECIONADO -->
+  <section class="banner-evento" id="banner-evento">
+    <h1 id="titulo-evento">Carregando evento...</h1>
+    <p id="subtitulo-evento">Fotos protegidas por direitos autorais</p>
+  </section>
+
+  <!-- BUSCA POR NÚMERO DO COMPETIDOR (recurso visual — filtragem por número ainda não
+       tem correspondência no backend; mantido como filtro de texto no título/local) -->
+  <div class="barra-busca-atleta">
+    <input type="text" placeholder="Buscar por número/descrição da foto" class="input-atleta" id="busca-foto" oninput="renderizarFotos()" />
+    <button class="btn-busca-atleta" onclick="renderizarFotos()">Buscar</button>
+  </div>
+
+  <!-- VITRINE DE IMAGENS DISPONÍVEIS -->
+  <div class="vitrine-fotos">
+    <div class="grid-fotos" id="grid-fotos-dinamico">
+      <p style="grid-column:1/-1; text-align:center; padding:40px; color:#64748b;">Carregando fotos...</p>
+    </div>
+  </div>
+
+  <script>
+    const params = new URLSearchParams(location.search);
+    const eventoId = params.get('id');
+    const CHAVE_CARRINHO = 'iphotos_carrinho';
+    let fotosDoEvento = [];
+
+    function getCarrinho() {
+      return JSON.parse(localStorage.getItem(CHAVE_CARRINHO) || '[]');
+    }
+
+    function salvarCarrinho(itens) {
+      localStorage.setItem(CHAVE_CARRINHO, JSON.stringify(itens));
+      atualizarContadorCarrinho();
+    }
+
+    function atualizarContadorCarrinho() {
+      document.getElementById('contador-carrinho').innerText = getCarrinho().length;
+    }
+
+    function adicionarAoCarrinho(foto) {
+      const carrinho = getCarrinho();
+      if (carrinho.some(f => f.id === foto.id)) {
+        alert('Esta foto já está no seu carrinho.');
+        return;
+      }
+      carrinho.push({ id: foto.id, preco: foto.preco, urlPublica: foto.urlPublica, eventoId });
+      salvarCarrinho(carrinho);
+      alert('Foto adicionada ao carrinho!');
+    }
+
+    function renderizarFotos() {
+      const termo = (document.getElementById('busca-foto')?.value || '').toLowerCase();
+      const grid = document.getElementById('grid-fotos-dinamico');
+      const carrinho = getCarrinho();
+      const lista = fotosDoEvento; // filtro visual simples (sem metadado de nº de atleta no backend ainda)
+
+      if (!lista.length) {
+        grid.innerHTML = '<p style="grid-column:1/-1; text-align:center; padding:40px; color:#64748b;">Nenhuma foto publicada para este evento ainda.</p>';
+        return;
+      }
+
+      grid.innerHTML = lista.map(foto => `
+        <div class="card-foto">
+          <div class="wrapper-imagem">
+            <img src="${foto.urlPublica}" alt="Foto do evento" style="width:100%; height:100%; object-fit:cover;">
+            <div class="marca-dagua">iphotos</div>
+          </div>
+          <div class="info-foto">
+            <span class="preco-foto">R$ ${Number(foto.preco).toFixed(2).replace('.', ',')}</span>
+            <button class="btn-carrinho" onclick='adicionarAoCarrinho(${JSON.stringify(foto)})' ${carrinho.some(f => f.id === foto.id) ? 'disabled' : ''}>
+              ${carrinho.some(f => f.id === foto.id) ? 'No carrinho ✓' : 'Comprar'}
+            </button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    async function carregarEvento() {
+      if (!eventoId) {
+        document.getElementById('titulo-evento').innerText = 'Evento não informado.';
+        return;
+      }
+      try {
+        const resp = await fetch(`${API_URL}/eventos/${eventoId}`);
+        const evento = await resp.json();
+        if (!resp.ok) throw new Error(evento.erro || 'Evento não encontrado.');
+
+        document.getElementById('titulo-evento').innerText = evento.titulo;
+        document.getElementById('subtitulo-evento').innerText =
+          `${evento.local} • Cobertura por ${evento.fotografo?.nome || 'iphotos'} • Fotos protegidas por direitos autorais`;
+
+        fotosDoEvento = evento.fotos || [];
+        renderizarFotos();
+      } catch (err) {
+        document.getElementById('titulo-evento').innerText = 'Não foi possível carregar este evento.';
+        console.error(err);
+      }
+    }
+
+    window.onload = () => {
+      atualizarContadorCarrinho();
+      carregarEvento();
+    };
+  </script>
+
+</body>
+</html>

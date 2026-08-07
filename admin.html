@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Painel Admin - iphotos</title>
+  <link rel="stylesheet" href="admin.css">
+  <script src="api-config.js"></script>
+  <style>
+    .item-ordem { display: flex; align-items: center; justify-content: space-between; background: #f8fafc; padding: 12px 16px; border: 1px solid #e2e8f0; border-radius: 8px; margin-bottom: 10px; }
+    .controles-ordem button { background: white; border: 1px solid #cbd5e1; padding: 4px 10px; border-radius: 4px; cursor: pointer; font-weight: bold; }
+    .bloco-cores-cat { margin-top: 20px; padding-top: 15px; border-top: 1px dashed #e2e8f0; }
+    .btn-whatsapp-link { background-color: #e6fcf5; color: #0ca678; border: 1px solid #96f2d7; padding: 6px 10px; border-radius: 6px; font-weight: 600; font-size: 11px; text-decoration: none; display: inline-block; margin-right: 4px; }
+    .btn-pagar-pix { background-color: #e3fafc; color: #1098ad; border: 1px solid #99e9f2; padding: 6px 12px; border-radius: 6px; font-weight: bold; font-size: 11px; cursor: pointer; }
+    .btn-deletar-evento-banco { background-color: #fef2f2; color: #dc2626; border: 1px solid #fecaca; padding: 6px 12px; border-radius: 6px; font-weight: bold; font-size: 11px; cursor: pointer; }
+    .btn-alterar-senha-admin { background-color: #f1f5f9; color: #334155; border: 1px solid #cbd5e1; padding: 6px 10px; border-radius: 6px; font-weight: 600; font-size: 11px; cursor: pointer; margin-right: 4px; }
+    .btn-remover-usuario-admin { background-color: #fff5f5; color: #e03131; border: 1px solid #ffc9c9; padding: 6px 10px; border-radius: 6px; font-weight: 600; font-size: 11px; cursor: pointer; }
+    .select-nuvem-individual { padding: 6px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 12px; background-color: #ffffff; color: #334155; font-weight: 600; outline: none; cursor: pointer; }
+    .select-nuvem-individual:focus { border-color: #00b4d8; }
+    .input-taxa-individual { width: 60px; padding: 4px 6px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 12px; text-align: center; }
+
+    /* TELA DE LOGIN DO ADMIN */
+    #tela-login-admin { max-width: 380px; margin: 80px auto; padding: 32px; border: 1px solid #e2e8f0; border-radius: 12px; box-shadow: 0 4px 18px rgba(0,0,0,0.06); }
+    #tela-login-admin h2 { margin-bottom: 18px; }
+    #tela-login-admin input { width: 100%; padding: 10px; margin-bottom: 12px; border: 1px solid #cbd5e1; border-radius: 6px; box-sizing: border-box; }
+    #tela-login-admin button { width: 100%; padding: 10px; background: #00b4d8; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; }
+    #erro-login-admin { color: #e63946; font-size: 13px; display: none; margin-bottom: 10px; }
+    #painel-admin-conteudo { display: none; }
+  </style>
+</head>
+<body>
+
+  <header class="meu-header">
+    <a href="index.html" class="logo">iphoto<span>s</span></a>
+    <nav class="menu-links">
+      <span>Painel Master Admin ⚙️</span>
+      <a href="#" id="link-sair-admin" onclick="sairDoAdmin()" style="display:none;">Sair</a>
+    </nav>
+  </header>
+
+  <!-- TELA DE LOGIN (usuário + senha) -->
+  <div id="tela-login-admin">
+    <h2>Acesso restrito</h2>
+    <p id="erro-login-admin"></p>
+    <form onsubmit="fazerLoginAdmin(event)">
+      <input type="text" id="admin-usuario" placeholder="Usuário" required autocomplete="username" />
+      <input type="password" id="admin-senha" placeholder="Senha" required autocomplete="current-password" />
+      <button type="submit" id="btn-login-admin">Entrar</button>
+    </form>
+  </div>
+
+  <!-- CONTEÚDO REAL DO PAINEL (só aparece após login) -->
+  <div id="painel-admin-conteudo">
+    <div class="container-admin">
+      <div>
+        <!-- GERENCIADOR DE TEMAS -->
+        <div class="card-admin">
+          <h2>Gerenciar Tema (CSS Geral)</h2>
+          <form onsubmit="salvarConfiguracoes(event)">
+            <div class="seletor-cor-item"><label>Cor Primária</label><input type="color" id="input-primaria" value="#00b4d8" /></div>
+            <div class="seletor-cor-item"><label>Fundo Header</label><input type="color" id="input-topo" value="#000000" /></div>
+            <div class="bloco-cores-cat">
+              <div class="seletor-cor-item"><label>🐎 Vaquejada</label><input type="color" id="cor-cat-vaquejada" value="#00b4d8" /></div>
+              <div class="seletor-cor-item"><label>🚴 Ciclismo</label><input type="color" id="cor-cat-ciclismo" value="#00b4d8" /></div>
+              <div class="seletor-cor-item"><label>🏃 Corrida</label><input type="color" id="cor-cat-corrida" value="#00b4d8" /></div>
+              <div class="seletor-cor-item"><label>⚽ Futebol</label><input type="color" id="cor-cat-futebol" value="#00b4d8" /></div>
+            </div>
+            <button type="submit" class="btn-salvar-tema">Salvar Cores</button>
+          </form>
+        </div>
+
+        <!-- REORDENAÇÃO DE CATEGORIAS -->
+        <div class="card-admin">
+          <h2>Ordem de Destaque</h2>
+          <div id="lista-ordenacao-categorias"></div>
+        </div>
+
+        <!-- CUPONS DE DESCONTO -->
+        <div class="card-admin">
+          <h2>Cupons de Desconto</h2>
+          <form onsubmit="criarCupom(event)" style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:14px;">
+            <input type="text" id="cupom-codigo" placeholder="CÓDIGO" required style="flex:1; min-width:110px; padding:8px; border:1px solid #cbd5e1; border-radius:6px; text-transform:uppercase;">
+            <select id="cupom-tipo" style="padding:8px; border:1px solid #cbd5e1; border-radius:6px;">
+              <option value="PERCENTUAL">% Percentual</option>
+              <option value="VALOR_FIXO">R$ Valor fixo</option>
+            </select>
+            <input type="number" id="cupom-valor" placeholder="Valor" step="0.01" required style="width:90px; padding:8px; border:1px solid #cbd5e1; border-radius:6px;">
+            <button type="submit" class="btn-salvar-tema" style="width:auto; padding:8px 16px;">Criar</button>
+          </form>
+          <table class="lista-admin">
+            <thead><tr><th>Código</th><th>Desconto</th><th>Usos</th><th>Status</th></tr></thead>
+            <tbody id="tabela-cupons-admin"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div>
+        <!-- MODERAÇÃO DE COBERTURAS -->
+        <div class="card-admin">
+          <h2>Moderação de Coberturas (Exclusão do Banco)</h2>
+          <table class="lista-admin">
+            <thead><tr><th>Evento</th><th>Data</th><th>Fotógrafo</th><th>Ação Crítica</th></tr></thead>
+            <tbody id="tabela-eventos-moderacao-admin"></tbody>
+          </table>
+        </div>
+
+        <!-- MESA DE SAQUES -->
+        <div class="card-admin">
+          <h2>Mesa de Saques (Liquidação 22h)</h2>
+          <table class="lista-admin">
+            <thead><tr><th>Fotógrafo</th><th>Chave Pix</th><th>Valor</th><th>Suporte</th></tr></thead>
+            <tbody id="tabela-saques-admin"></tbody>
+          </table>
+        </div>
+
+        <!-- GERENCIAMENTO DE FOTÓGRAFOS: MULTI-CLOUD + TAXA INDIVIDUAL -->
+        <div class="card-admin">
+          <h2>Gerenciamento de Fotógrafos Ativos</h2>
+          <table class="lista-admin">
+            <thead><tr><th>Fotógrafo</th><th>Servidor de Fotos (Nuvem)</th><th>Taxa (%)</th><th>Ações de Controle</th></tr></thead>
+            <tbody id="tabela-fotografos-admin"></tbody>
+          </table>
+        </div>
+
+        <!-- GERENCIAMENTO CLIENTES -->
+        <div class="card-admin">
+          <h2>Gerenciamento de Clientes (Compradores)</h2>
+          <table class="lista-admin">
+            <thead><tr><th>Nome do Cliente</th><th>E-mail</th><th>Ações</th></tr></thead>
+            <tbody id="tabela-clientes-admin"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ------------------------------------------------------------
+    // LOGIN
+    // ------------------------------------------------------------
+    async function fazerLoginAdmin(e) {
+      e.preventDefault();
+      const usuario = document.getElementById('admin-usuario').value;
+      const senha = document.getElementById('admin-senha').value;
+      const btn = document.getElementById('btn-login-admin');
+      const erroEl = document.getElementById('erro-login-admin');
+      erroEl.style.display = 'none';
+      btn.disabled = true;
+      btn.innerText = 'Entrando...';
+
+      try {
+        const resp = await fetch(`${API_URL}/admin/login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ usuario, senha })
+        });
+        const dados = await resp.json();
+        if (!resp.ok) throw new Error(dados.erro || 'Falha no login.');
+
+        localStorage.setItem('iphotos_admin_token', dados.token);
+        mostrarPainel();
+      } catch (err) {
+        erroEl.innerText = err.message;
+        erroEl.style.display = 'block';
+      } finally {
+        btn.disabled = false;
+        btn.innerText = 'Entrar';
+      }
+    }
+
+    function sairDoAdmin() {
+      AuthStorage.limparSessaoAdmin();
+      document.getElementById('tela-login-admin').style.display = 'block';
+      document.getElementById('painel-admin-conteudo').style.display = 'none';
+      document.getElementById('link-sair-admin').style.display = 'none';
+    }
+
+    function mostrarPainel() {
+      document.getElementById('tela-login-admin').style.display = 'none';
+      document.getElementById('painel-admin-conteudo').style.display = 'block';
+      document.getElementById('link-sair-admin').style.display = 'inline';
+      carregarTudo();
+    }
+
+    // ------------------------------------------------------------
+    // FOTÓGRAFOS (multi-cloud + taxa individual)
+    // ------------------------------------------------------------
+    async function carregarUsuariosParaGerenciamento() {
+      const tabelaFotografos = document.getElementById('tabela-fotografos-admin');
+      const tabelaClientes = document.getElementById('tabela-clientes-admin');
+
+      try {
+        const fotografos = await apiFetchAdmin('/admin/fotografos');
+        tabelaFotografos.innerHTML = fotografos.map(f => `
+          <tr id="linha-fotografo-admin-${f.id}">
+            <td><strong>${f.nome}</strong><br><span style="font-size:11px; color:#64748b;">${f.email}</span></td>
+            <td>
+              <select class="select-nuvem-individual" onchange="alterarNuvemIndividualFotografo('${f.id}', this.value)">
+                <option value="R2" ${f.provedorNuvem === 'R2' ? 'selected' : ''}>Cloudflare R2</option>
+                <option value="S3" ${f.provedorNuvem === 'S3' ? 'selected' : ''}>Amazon S3</option>
+              </select>
+            </td>
+            <td>
+              <input type="number" class="input-taxa-individual" value="${f.taxaComissao}" step="0.5" min="0" max="100"
+                onchange="alterarTaxaFotografo('${f.id}', this.value)" />
+            </td>
+            <td>
+              <button class="btn-alterar-senha-admin" onclick="alterarSenhaUsuarioBanco('${f.id}', '${f.nome}')">Senha</button>
+              <button class="btn-remover-usuario-admin" onclick="removerUsuarioPermanenteBanco('${f.id}', '${f.nome}')">Remover</button>
+            </td>
+          </tr>
+        `).join('') || '<tr><td colspan="4" style="text-align:center;color:#64748b;padding:15px;">Nenhum fotógrafo cadastrado.</td></tr>';
+      } catch (err) {
+        tabelaFotografos.innerHTML = `<tr><td colspan="4" style="color:#e63946;">${err.message}</td></tr>`;
+      }
+
+      try {
+        const usuarios = await apiFetchAdmin('/admin/usuarios');
+        const clientes = usuarios.filter(u => u.papel === 'CLIENTE');
+        tabelaClientes.innerHTML = clientes.map(c => `
+          <tr id="linha-cliente-admin-${c.id}">
+            <td><strong>${c.nome}</strong></td>
+            <td><span style="font-size:11px; color:#64748b;">${c.email}</span></td>
+            <td>
+              <button class="btn-alterar-senha-admin" onclick="alterarSenhaUsuarioBanco('${c.id}', '${c.nome}')">Senha</button>
+              <button class="btn-remover-usuario-admin" onclick="removerUsuarioPermanenteBanco('${c.id}', '${c.nome}')">Remover</button>
+            </td>
+          </tr>
+        `).join('') || '<tr><td colspan="3" style="text-align:center;color:#64748b;padding:15px;">Nenhum cliente cadastrado.</td></tr>';
+      } catch (err) {
+        tabelaClientes.innerHTML = `<tr><td colspan="3" style="color:#e63946;">${err.message}</td></tr>`;
+      }
+    }
+
+    async function alterarNuvemIndividualFotografo(id, novoProvedor) {
+      try {
+        await apiFetchAdmin(`/admin/fotografos/${id}/provedor-nuvem`, {
+          method: 'PUT',
+          body: JSON.stringify({ provedorNuvem: novoProvedor })
+        });
+        alert('Servidor de nuvem atualizado! Os próximos uploads deste fotógrafo já usarão o novo provedor.');
+      } catch (err) {
+        alert(err.message);
+      }
+    }
+
+    async function alterarTaxaFotografo(id, novaTaxa) {
+      try {
+        await apiFetchAdmin(`/admin/fotografos/${id}/taxa`, {
+          method: 'PUT',
+          body: JSON.stringify({ taxaComissao: parseFloat(novaTaxa) })
+        });
+      } catch (err) {
+        alert(err.message);
+      }
+    }
+
+    async function alterarSenhaUsuarioBanco(id, nome) {
+      const novaSenha = prompt(`Nova senha para ${nome}:`);
+      if (!novaSenha) return;
+      if (novaSenha.trim().length < 6) { alert('Erro: mínimo 6 caracteres.'); return; }
+      try {
+        await apiFetchAdmin(`/admin/usuarios/${id}/resetar-senha`, {
+          method: 'PUT',
+          body: JSON.stringify({ novaSenha })
+        });
+        alert('Senha redefinida com sucesso.');
+      } catch (err) {
+        alert(err.message);
+      }
+    }
+
+    async function removerUsuarioPermanenteBanco(id, nome) {
+      if (!confirm(`Deletar a conta de ${nome} permanentemente?`)) return;
+      try {
+        await apiFetchAdmin(`/admin/usuarios/${id}`, { method: 'DELETE' });
+        carregarUsuariosParaGerenciamento();
+      } catch (err) {
+        alert(err.message);
+      }
+    }
+
+    // ------------------------------------------------------------
+    // MODERAÇÃO DE EVENTOS ("Deletar Tudo")
+    // ------------------------------------------------------------
+    async function carregarEventosParaModeracao() {
+      const container = document.getElementById('tabela-eventos-moderacao-admin');
+      try {
+        const eventos = await apiFetchAdmin('/admin/eventos');
+        container.innerHTML = eventos.map(ev => `
+          <tr id="linha-evento-admin-${ev.id}">
+            <td><strong>${ev.titulo}</strong></td>
+            <td><span style="font-weight:600;color:#475569;">${new Date(ev.dataRealizacao).toLocaleDateString('pt-BR')}</span></td>
+            <td><span style="font-size:13px;color:#64748b;">${ev.fotografo?.nome || '—'}</span></td>
+            <td><button class="btn-deletar-evento-banco" onclick="deletarEventoPermanenteDoBanco('${ev.id}', '${ev.titulo.replace(/'/g, "\\'")}')">🗑️</button></td>
+          </tr>
+        `).join('') || '<tr><td colspan="4" style="text-align:center;color:#64748b;padding:15px;">Nenhum evento cadastrado.</td></tr>';
+      } catch (err) {
+        container.innerHTML = `<tr><td colspan="4" style="color:#e63946;">${err.message}</td></tr>`;
+      }
+    }
+
+    async function deletarEventoPermanenteDoBanco(id, titulo) {
+      if (!confirm(`Apagar "${titulo}" do banco e do Storage? Esta ação é irreversível.`)) return;
+      try {
+        await apiFetchAdmin(`/admin/eventos/${id}`, { method: 'DELETE' });
+        carregarEventosParaModeracao();
+      } catch (err) {
+        alert(err.message);
+      }
+    }
+
+    // ------------------------------------------------------------
+    // MESA DE SAQUES
+    // ------------------------------------------------------------
+    async function carregarFilaSaquesAdmin() {
+      const container = document.getElementById('tabela-saques-admin');
+      try {
+        const saques = await apiFetchAdmin('/admin/saques?status=PENDENTE');
+        if (!saques.length) {
+          container.innerHTML = '<tr><td colspan="4" style="text-align:center;color:#64748b;padding:15px;">Sem saques pendentes.</td></tr>';
+          return;
+        }
+        container.innerHTML = saques.map(item => `
+          <tr id="pedido-saque-${item.id}">
+            <td><strong>${item.fotografo.nome}</strong></td>
+            <td><code>${item.chavePix}</code></td>
+            <td><strong style="color:#b91c1c;">R$ ${Number(item.valor).toFixed(2)}</strong></td>
+            <td>
+              ${item.fotografo.whatsapp ? `<a href="https://wa.me/${item.fotografo.whatsapp.replace(/\\D/g,'')}" target="_blank" class="btn-whatsapp-link">Whats</a>` : ''}
+              <button class="btn-pagar-pix" onclick="confirmarEfetivacaoPix('${item.id}', '${item.fotografo.nome.replace(/'/g, "\\'")}')">Pago</button>
+            </td>
+          </tr>
+        `).join('');
+      } catch (err) {
+        container.innerHTML = `<tr><td colspan="4" style="color:#e63946;">${err.message}</td></tr>`;
+      }
+    }
+
+    async function confirmarEfetivacaoPix(id, nome) {
+      if (!confirm(`Confirmar transferência para ${nome}?`)) return;
+      try {
+        await apiFetchAdmin(`/admin/saques/${id}/pagar`, { method: 'PUT' });
+        carregarFilaSaquesAdmin();
+      } catch (err) {
+        alert(err.message);
+      }
+    }
+
+    // ------------------------------------------------------------
+    // CUPONS
+    // ------------------------------------------------------------
+    async function carregarCupons() {
+      const container = document.getElementById('tabela-cupons-admin');
+      try {
+        const cupons = await apiFetchAdmin('/admin/cupons');
+        container.innerHTML = cupons.map(c => `
+          <tr>
+            <td><strong>${c.codigo}</strong></td>
+            <td>${c.tipoDesconto === 'PERCENTUAL' ? c.valorDesconto + '%' : 'R$ ' + Number(c.valorDesconto).toFixed(2)}</td>
+            <td>${c.usosRealizados}${c.limiteUsos ? '/' + c.limiteUsos : ''}</td>
+            <td><button class="btn-alterar-senha-admin" onclick="alternarCupom('${c.id}', ${!c.ativo})">${c.ativo ? 'Ativo ✅' : 'Inativo ❌'}</button></td>
+          </tr>
+        `).join('') || '<tr><td colspan="4" style="text-align:center;color:#64748b;padding:15px;">Nenhum cupom criado.</td></tr>';
+      } catch (err) {
+        container.innerHTML = `<tr><td colspan="4" style="color:#e63946;">${err.message}</td></tr>`;
+      }
+    }
+
+    async function criarCupom(e) {
+      e.preventDefault();
+      const codigo = document.getElementById('cupom-codigo').value;
+      const tipoDesconto = document.getElementById('cupom-tipo').value;
+      const valorDesconto = parseFloat(document.getElementById('cupom-valor').value);
+      try {
+        await apiFetchAdmin('/admin/cupons', {
+          method: 'POST',
+          body: JSON.stringify({ codigo, tipoDesconto, valorDesconto })
+        });
+        e.target.reset();
+        carregarCupons();
+      } catch (err) {
+        alert(err.message);
+      }
+    }
+
+    async function alternarCupom(id, ativo) {
+      try {
+        await apiFetchAdmin(`/admin/cupons/${id}/status`, { method: 'PUT', body: JSON.stringify({ ativo }) });
+        carregarCupons();
+      } catch (err) {
+        alert(err.message);
+      }
+    }
+
+    // ------------------------------------------------------------
+    // TEMA / ORDEM DE CATEGORIAS (visual — segue em localStorage,
+    // não depende de credencial nenhuma para funcionar)
+    // ------------------------------------------------------------
+    let ordemCategorias = ['vaquejada', 'ciclismo', 'corrida', 'futebol'];
+
+    function renderizarControlesOrdem() {
+      const container = document.getElementById('lista-ordenacao-categorias');
+      const nomes = { vaquejada: '🐎 Vaquejada', ciclismo: '🚴 Ciclismo', corrida: '🏃 Corrida', futebol: '⚽ Futebol' };
+      container.innerHTML = ordemCategorias.map((cat, index) => {
+        const isFirst = index === 0;
+        const isLast = index === ordemCategorias.length - 1;
+        return `<div class="item-ordem"><span><strong>#${index + 1}</strong> - ${nomes[cat]}</span><div class="controles-ordem"><button type="button" onclick="moverCatar(${index}, -1)" ${isFirst ? 'disabled style="opacity:0.3"' : ''}>▲</button><button type="button" onclick="moverCatar(${index}, 1)" ${isLast ? 'disabled style="opacity:0.3"' : ''}>▼</button></div></div>`;
+      }).join('');
+    }
+
+    function moverCatar(index, direcao) {
+      const novaPosicao = index + direcao;
+      if (novaPosicao < 0 || novaPosicao >= ordemCategorias.length) return;
+      [ordemCategorias[index], ordemCategorias[novaPosicao]] = [ordemCategorias[novaPosicao], ordemCategorias[index]];
+      localStorage.setItem('iphotos_ordem', JSON.stringify(ordemCategorias));
+      renderizarControlesOrdem();
+    }
+
+    async function salvarConfiguracoes(e) {
+      e.preventDefault();
+      const corPrimaria = document.getElementById('input-primaria').value;
+      localStorage.setItem('iphotos_primaria', corPrimaria);
+      localStorage.setItem('iphotos_topo', document.getElementById('input-topo').value);
+      localStorage.setItem('iphotos_cores_cat', JSON.stringify({
+        vaquejada: document.getElementById('cor-cat-vaquejada').value,
+        ciclismo: document.getElementById('cor-cat-ciclismo').value,
+        corrida: document.getElementById('cor-cat-corrida').value,
+        futebol: document.getElementById('cor-cat-futebol').value,
+      }));
+      try {
+        await apiFetchAdmin('/admin/config', { method: 'PUT', body: JSON.stringify({ corPrimaria }) });
+      } catch (err) { console.error(err); }
+      alert('Configurações salvas!');
+    }
+
+    function carregarTemaSalvo() {
+      if (localStorage.getItem('iphotos_ordem')) ordemCategorias = JSON.parse(localStorage.getItem('iphotos_ordem'));
+      if (localStorage.getItem('iphotos_cores_cat')) {
+        const cores = JSON.parse(localStorage.getItem('iphotos_cores_cat'));
+        ['vaquejada', 'ciclismo', 'corrida', 'futebol'].forEach(cat => {
+          if (cores[cat]) document.getElementById(`cor-cat-${cat}`).value = cores[cat];
+        });
+      }
+      if (localStorage.getItem('iphotos_primaria')) document.getElementById('input-primaria').value = localStorage.getItem('iphotos_primaria');
+      if (localStorage.getItem('iphotos_topo')) document.getElementById('input-topo').value = localStorage.getItem('iphotos_topo');
+      renderizarControlesOrdem();
+    }
+
+    function carregarTudo() {
+      carregarTemaSalvo();
+      carregarFilaSaquesAdmin();
+      carregarEventosParaModeracao();
+      carregarUsuariosParaGerenciamento();
+      carregarCupons();
+    }
+
+    window.onload = () => {
+      if (AuthStorage.getAdminToken()) {
+        mostrarPainel();
+      }
+    };
+  </script>
+</body>
+</html>

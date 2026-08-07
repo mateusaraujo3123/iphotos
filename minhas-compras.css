@@ -1,0 +1,143 @@
+/* VARIÁVEIS COM A SUA IDENTIDADE VISUAL */
+:root {
+  --cor-fundo-geral: #f8fafc;       
+  --cor-texto-principal: #111827;   
+  --cor-topo-fundo: #000000;        
+  --cor-topo-texto: #ffffff;        
+  --cor-primaria: #00b4d8;          
+  --cor-primaria-hover: #0077b6;    
+  --cor-card-fundo: #ffffff;        
+  --cor-card-borda: #cbd5e1;        
+}
+
+/* ESTILOS BASE */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+body {
+  background-color: var(--cor-fundo-geral);
+  color: var(--cor-texto-principal);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Header */
+.meu-header {
+  background-color: var(--cor-topo-fundo);
+  color: var(--cor-topo-texto);
+  padding: 15px 30px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.logo {
+  font-size: 24px;
+  font-weight: 900;
+  letter-spacing: 1px;
+  text-decoration: none;
+  color: var(--cor-topo-texto);
+}
+
+.logo span {
+  color: var(--cor-primaria);
+}
+
+.menu-links a {
+  color: var(--cor-topo-texto);
+  text-decoration: none;
+  margin-left: 20px;
+  font-size: 14px;
+}
+
+/* Layout das Compras */
+.container-compras {
+  max-width: 900px;
+  margin: 40px auto;
+  padding: 0 20px;
+  width: 100%;
+}
+
+.card-pedido {
+  background-color: var(--cor-card-fundo);
+  border: 1px solid var(--cor-card-borda);
+  border-radius: 12px;
+  padding: 24px;
+  margin-bottom: 24px;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.02);
+}
+
+.pedido-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-b: 1px solid #f1f5f9;
+  padding-bottom: 12px;
+  margin-bottom: 16px;
+}
+
+.pedido-id {
+  font-weight: bold;
+  font-size: 15px;
+}
+
+.pedido-status {
+  font-size: 12px;
+  font-weight: 700;
+  background-color: #dcfce7;
+  color: #166534;
+  padding: 4px 10px;
+  border-radius: 20px;
+}
+
+/* Lista de Fotos Compradas */
+.grid-fotos-compradas {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 16px;
+}
+
+.item-foto-comprada {
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  overflow: hidden;
+  text-align: center;
+  background: #f8fafc;
+}
+
+.miniatura-foto {
+  height: 120px;
+  background-color: #cbd5e1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 32px;
+}
+
+.acoes-foto {
+  padding: 12px;
+}
+
+.btn-download {
+  display: block;
+  width: 100%;
+  background-color: var(--cor-primaria);
+  color: white;
+  border: none;
+  padding: 8px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: bold;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.btn-download:hover {
+  background-color: var(--cor-primaria-hover);
+}

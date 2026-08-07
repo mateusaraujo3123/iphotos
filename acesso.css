@@ -1,0 +1,181 @@
+/* VARIÁVEIS DA SUA IDENTIDADE VISUAL */
+:root {
+  --cor-fundo-geral: #f8fafc;       
+  --cor-texto-principal: #111827;   
+  --cor-topo-fundo: #000000;        
+  --cor-topo-texto: #ffffff;        
+  --cor-primaria: #00b4d8;          
+  --cor-primaria-hover: #0077b6;    
+  --cor-card-fundo: #ffffff;        
+  --cor-card-borda: #e2e8f0;        
+}
+
+/* ESTILOS BASE */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+body {
+  background-color: var(--cor-fundo-geral);
+  color: var(--cor-texto-principal);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Header */
+.meu-header {
+  background-color: var(--cor-topo-fundo);
+  color: var(--cor-topo-texto);
+  padding: 15px 30px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
+.logo {
+  font-size: 24px;
+  font-weight: 900;
+  letter-spacing: 1px;
+  text-decoration: none;
+  color: var(--cor-topo-texto);
+}
+
+.logo span {
+  color: var(--cor-primaria);
+}
+
+.menu-links a {
+  color: var(--cor-topo-texto);
+  text-decoration: none;
+  font-size: 14px;
+}
+
+/* Containers Centrais de Formulários */
+.container-formulario {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+}
+
+.card-formulario {
+  background-color: var(--cor-card-fundo);
+  border: 1px solid var(--cor-card-borda);
+  border-radius: 12px;
+  width: 100%;
+  max-width: 460px;
+  padding: 40px 30px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.04);
+}
+
+.card-formulario h2 {
+  font-size: 24px;
+  font-weight: 800;
+  margin-bottom: 8px;
+  text-align: center;
+}
+
+.subtitulo {
+  font-size: 14px;
+  color: #64748b;
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+.subtitulo a {
+  color: var(--cor-primaria);
+  text-decoration: none;
+  font-weight: 600;
+}
+
+/* Seletores de Perfil (Aba Cliente / Fotógrafo) */
+.seletor-perfil {
+  display: flex;
+  background-color: #f1f5f9;
+  padding: 4px;
+  border-radius: 8px;
+  margin-bottom: 24px;
+}
+
+.opcao-perfil {
+  flex: 1;
+  text-align: center;
+  padding: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #64748b;
+  cursor: pointer;
+  border-radius: 6px;
+}
+
+.opcao-perfil.ativo {
+  background-color: white;
+  color: var(--cor-texto-principal);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+/* Elementos do Formulário */
+.grupo-input {
+  margin-bottom: 18px;
+}
+
+.grupo-input label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 6px;
+  color: #334155;
+}
+
+.grupo-input input, .grupo-input select {
+  width: 100%;
+  padding: 12px 16px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  font-size: 14px;
+  outline: none;
+}
+
+.grupo-input input:focus, .grupo-input select:focus {
+  border-color: var(--cor-primaria);
+}
+
+.campos-fotógrafo {
+  display: none;
+}
+
+.esqueceu-senha {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: -10px;
+  margin-bottom: 24px;
+}
+
+.esqueceu-senha a {
+  font-size: 13px;
+  color: #64748b;
+  text-decoration: none;
+}
+
+.btn-enviar {
+  width: 100%;
+  background-color: var(--cor-primaria);
+  color: white;
+  border: none;
+  padding: 14px;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.btn-enviar:hover {
+  background-color: var(--cor-primaria-hover);
+}

@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Painel do Fotógrafo - iphotos</title>
+  <link rel="stylesheet" href="painel-fotografo.css">
+  <script src="api-config.js"></script>
+</head>
+<body>
+
+  <!-- HEADER -->
+  <header class="meu-header">
+    <a href="index.html" class="logo">iphoto<span>s</span></a>
+    <nav class="menu-links">
+      <!-- Nome capturado dinamicamente do login -->
+      <span style="font-size: 14px; color: var(--cor-primaria); font-weight: bold; margin-right: 10px;">
+        Olá, <span id="nome-dinamico-painel-fotografo">Fotógrafo</span> 📸
+      </span>
+      <a href="#" onclick="efetuarLogoutSistema()">Sair</a>
+    </nav>
+  </header>
+
+
+  <!-- CONTEÚDO DO PAINEL -->
+  <div class="container-painel">
+    
+    <!-- ESQUERDA: CADASTRAR COBERTURA E GERENCIADOR DE SAQUE -->
+    <div>
+      <div class="card-painel">
+        <h2>Nova Cobertura</h2>
+        <form onsubmit="adicionarEventoComCapa(event)">
+          <div class="grupo-input">
+            <label for="nome-evento">Nome do Evento / Competição</label>
+            <input type="text" id="nome-evento" placeholder="Ex: Grande Vaquejada de Caruaru" required />
+          </div>
+          
+          <div class="grupo-input">
+            <label for="categoria-evento">Modalidade</label>
+            <select id="categoria-evento" required>
+              <option value="vaquejada">🐎 Vaquejada</option>
+              <option value="ciclismo">🚴 Ciclismo</option>
+              <option value="corrida">🏃 Corrida</option>
+              <option value="futebol">⚽ Futebol</option>
+            </select>
+          </div>
+
+          <div class="grupo-input">
+            <label for="local-evento">Local do Evento</label>
+            <input type="text" id="local-evento" placeholder="Ex: Caruaru, PE" required />
+          </div>
+
+          <!-- CAMPO ADICIONADO: Data do Evento -->
+          <div class="grupo-input">
+            <label for="data-evento">Data da Realização do Evento</label>
+            <input type="date" id="data-evento" required />
+          </div>
+
+          <div class="grupo-input">
+            <label for="preco-foto">Preço por Foto (R$)</label>
+            <input type="number" id="preco-foto" placeholder="Ex: 9.90" step="0.01" required />
+          </div>
+
+          <div class="grupo-input">
+            <label>Foto de Capa do Card (Destaque na Home)</label>
+            <div class="container-upload-capa">
+              <div class="preview-capa-box" id="box-preview-capa">🖼️</div>
+              <div>
+                <button type="button" class="btn-escolher-capa" onclick="document.getElementById('input-foto-capa').click()">Selecionar Foto de Capa</button>
+                <input type="file" id="input-foto-capa" accept="image/*" style="display: none;" onchange="gerarPreviewCapa(this)" required />
+              </div>
+            </div>
+          </div>
+          
+          <div class="grupo-input">
+            <label>Fotos da Cobertura (Venda)</label>
+            <div class="dropzone" onclick="document.getElementById('file-input').click()">
+              <input type="file" id="file-input" accept="image/*" multiple style="display: none;" onchange="atualizarContadorLote(this)" />
+              <div class="dropzone-icone">📤</div>
+              <p id="texto-dropzone">Arraste o lote de fotos ou clique aqui</p>
+            </div>
+          </div>
+          <p id="status-upload" style="font-size:13px; color:#64748b; display:none; margin-bottom:8px;"></p>
+          <button type="submit" class="btn-acao" id="btn-publicar-evento">Publicar Evento e Fotos</button>
+        </form>
+      </div>
+
+      <!-- CARD GERENCIADOR DE SAQUE PIX -->
+      <div class="card-painel">
+        <h2>Solicitação de Saque</h2>
+        <div class="container-saldo-unico">
+          <span style="font-size: 13px; color: #64748b; font-weight: 600;">Saldo Disponível</span>
+          <div class="valor-saldo-unico" id="txt-saldo-disponivel">R$ 480,00</div>
+        </div>
+        <form onsubmit="solicitarSaquePix(event)">
+          <div class="grupo-input">
+            <label for="chave-pix">Sua Chave PIX</label>
+            <input type="text" id="chave-pix" placeholder="CPF, E-mail, Telefone ou Chave Aleatória" required />
+          </div>
+          <div class="grupo-input">
+            <label for="whatsapp-fotografo">Seu WhatsApp de Contato</label>
+            <input type="tel" id="whatsapp-fotografo" placeholder="(81) 99999-0000" required />
+          </div>
+          <div class="grupo-input">
+            <label for="valor-saque">Valor do Saque (R$)</label>
+            <input type="number" id="valor-saque" placeholder="Ex: 200.00" step="0.01" required />
+          </div>
+          <button type="submit" class="btn-acao" style="background-color: #111827;">Solicitar Transferência</button>
+        </form>
+        <div class="bloco-avisos-painel">
+          <div class="aviso-saque-notificacao"><span>⏰</span><p>Aviso: Todo saque solicitado será efetuado eletronicamente às 22 horas de cada dia útil.</p></div>
+          <div class="aviso-exclusao-notificacao"><span>⚠️</span><p>Importante: Cada evento criado e suas respectivas fotos serão apagados permanentemente do sistema a cada mês.</p></div>
+        </div>
+      </div>
+    </div>
+    <!-- DIREITA: GRÁFICOS FINANCEIROS E SEUS EVENTOS -->
+    <div>
+      <div class="card-painel">
+        <h2>Desempenho de Vendas (Faturamento)</h2>
+        <div class="filtro-grafico-abas">
+          <button class="btn-aba-grafico ativo" id="aba-dia" onclick="mudarPeriodoGrafico('dia')">Por Dia</button>
+          <button class="btn-aba-grafico" id="aba-semana" onclick="mudarPeriodoGrafico('semana')">Por Semana</button>
+          <button class="btn-aba-grafico" id="aba-mes" onclick="mudarPeriodoGrafico('mes')">Por Mês</button>
+        </div>
+        <div class="wrapper-grafico" id="container-barras-grafico"></div>
+      </div>
+      <div class="card-painel">
+        <h2>Meus Eventos Cadastrados</h2>
+        <div id="lista-eventos">
+          <div class="evento-item">
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <img src="https://unsplash.com" class="mini-capa-historico" alt="Capa">
+              <div>
+                <h4 style="font-weight: 700;">🐎 Circuito Vaquejada PE - Etapa Regional</h4>
+                <p style="font-size:12px; color:#64748b; margin-top:2px;">Preço: R$ 12,00 • 345 fotos enviadas</p>
+              </div>
+            </div>
+            <span class="status-badge">No Ar</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    let saldoDisponivelAtual = 0;
+    const emojiPorCategoria = { vaquejada: '🐎', ciclismo: '🚴', corrida: '🏃', futebol: '⚽' };
+
+    if (!AuthStorage.getToken() || AuthStorage.getPapel() !== 'FOTOGRAFO') {
+      window.location.href = 'login.html';
+    }
+
+    function gerarPreviewCapa(input) {
+      const box = document.getElementById('box-preview-capa');
+      if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = (e) => { box.innerHTML = `<img src="${e.target.result}" alt="Preview">`; };
+        reader.readAsDataURL(input.files[0]);
+      }
+    }
+
+    function atualizarContadorLote(input) {
+      const texto = document.getElementById('texto-dropzone');
+      texto.innerText = input.files.length
+        ? `${input.files.length} foto(s) selecionada(s)`
+        : 'Arraste o lote de fotos ou clique aqui';
+    }
+
+    async function adicionarEventoComCapa(e) {
+      e.preventDefault();
+      const btn = document.getElementById('btn-publicar-evento');
+      const statusEl = document.getElementById('status-upload');
+
+      const titulo = document.getElementById('nome-evento').value;
+      const categoria = document.getElementById('categoria-evento').value;
+      const local = document.getElementById('local-evento').value;
+      const precoPorFoto = parseFloat(document.getElementById('preco-foto').value);
+      const dataRealizacao = document.getElementById('data-evento').value;
+      const arquivoCapa = document.getElementById('input-foto-capa').files[0];
+      const arquivosLote = document.getElementById('file-input').files;
+
+      if (!arquivoCapa && arquivosLote.length === 0) {
+        alert('Selecione ao menos uma foto (de capa ou do lote).');
+        return;
+      }
+
+      btn.disabled = true;
+      btn.innerText = 'Publicando...';
+      statusEl.style.display = 'block';
+
+      try {
+        statusEl.innerText = 'Criando cobertura...';
+        const evento = await apiFetch('/fotografo/eventos', {
+          method: 'POST',
+          body: JSON.stringify({ titulo, categoria, local, dataRealizacao, precoPorFoto })
+        });
+
+        const form = new FormData();
+        if (arquivoCapa) form.append('fotos', arquivoCapa);
+        [...arquivosLote].forEach(f => form.append('fotos', f));
+
+        statusEl.innerText = `Enviando e processando ${form.getAll('fotos').length} foto(s) (compressão + marca d'água)...`;
+
+        const tokenAtual = AuthStorage.getToken();
+        const respUpload = await fetch(`${API_URL}/fotografo/eventos/${evento.id}/fotos`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${tokenAtual}` },
+          body: form
+        });
+        const resultadoUpload = await respUpload.json();
+        if (!respUpload.ok) throw new Error(resultadoUpload.erro || 'Falha ao enviar as fotos.');
+
+        alert('Cobertura publicada com sucesso e enviada ao catálogo do iphotos!');
+        e.target.reset();
+        document.getElementById('box-preview-capa').innerHTML = '🖼️';
+        document.getElementById('texto-dropzone').innerText = 'Arraste o lote de fotos ou clique aqui';
+        carregarMeusEventos();
+      } catch (err) {
+        alert(err.message);
+      } finally {
+        btn.disabled = false;
+        btn.innerText = 'Publicar Evento e Fotos';
+        statusEl.style.display = 'none';
+      }
+    }
+
+    async function carregarMeusEventos() {
+      const lista = document.getElementById('lista-eventos');
+      try {
+        const eventos = await apiFetch('/fotografo/eventos');
+        if (!eventos.length) {
+          lista.innerHTML = '<p style="color:#64748b; font-size:14px;">Você ainda não publicou nenhuma cobertura.</p>';
+          return;
+        }
+        lista.innerHTML = eventos.map(ev => `
+          <div class="evento-item">
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <img src="${ev.fotoCapaUrl || 'https://placehold.co/100x100?text=iphotos'}" class="mini-capa-historico" alt="Capa">
+              <div>
+                <h4 style="font-weight: 700;">${emojiPorCategoria[ev.categoria] || '📷'} ${ev.titulo}</h4>
+                <p style="font-size:12px; color:#64748b; margin-top:2px;">Preço: R$ ${Number(ev.precoPorFoto).toFixed(2)} • ${ev._count?.fotos || 0} fotos enviadas</p>
+              </div>
+            </div>
+            <span class="status-badge">No Ar</span>
+          </div>
+        `).join('');
+      } catch (err) {
+        lista.innerHTML = `<p style="color:#e63946;">${err.message}</p>`;
+      }
+    }
+
+    function renderizarGraficoSimples(totalLiquido) {
+      const container = document.getElementById('container-barras-grafico');
+      const altura = Math.min(180, Math.max(20, totalLiquido));
+      container.innerHTML = `<div class="barra-grafico" style="height:${altura}px;"><div class="valor-barra">R$ ${totalLiquido.toFixed(2)}</div><div class="label-barra">Total líquido</div></div>`;
+    }
+
+    function mudarPeriodoGrafico(periodo) {
+      document.querySelectorAll('.btn-aba-grafico').forEach(btn => btn.classList.remove('ativo'));
+      document.getElementById(`aba-${periodo}`)?.classList.add('ativo');
+      renderizarGraficoSimples(saldoDisponivelAtual);
+    }
+
+    async function carregarFaturamento() {
+      try {
+        const dados = await apiFetch('/fotografo/faturamento');
+        saldoDisponivelAtual = dados.saldoDisponivelParaSaque;
+        document.getElementById('txt-saldo-disponivel').innerText =
+          `R$ ${saldoDisponivelAtual.toFixed(2).replace('.', ',')}`;
+        document.getElementById('valor-saque').max = saldoDisponivelAtual;
+        renderizarGraficoSimples(dados.totalLiquido);
+      } catch (err) {
+        console.error('Erro ao carregar faturamento:', err);
+      }
+    }
+
+    async function solicitarSaquePix(e) {
+      e.preventDefault();
+      const valor = parseFloat(document.getElementById('valor-saque').value);
+      const chavePix = document.getElementById('chave-pix').value;
+      const whatsapp = document.getElementById('whatsapp-fotografo').value;
+
+      if (valor > saldoDisponivelAtual) {
+        alert('Valor solicitado é maior que o saldo disponível.');
+        return;
+      }
+
+      try {
+        await apiFetch('/fotografo/perfil', { method: 'PUT', body: JSON.stringify({ chavePix, whatsapp }) });
+        await apiFetch('/fotografo/saques', { method: 'POST', body: JSON.stringify({ valor }) });
+
+        alert(`Solicitação registrada!\nO valor de R$ ${valor.toFixed(2)} foi enviado para análise na mesa de saques do Painel Admin.`);
+        e.target.reset();
+        carregarFaturamento();
+      } catch (err) {
+        alert(err.message);
+      }
+    }
+
+    window.onload = () => {
+      document.getElementById('nome-dinamico-painel-fotografo').innerText = AuthStorage.getNome() || 'Fotógrafo Parceiro';
+      carregarFaturamento();
+      carregarMeusEventos();
+    };
+  </script>
+</body>
+</html>

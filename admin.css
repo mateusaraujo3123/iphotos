@@ -1,0 +1,197 @@
+/* VARIÁVEIS DA SUA IDENTIDADE VISUAL */
+:root {
+  --cor-fundo-geral: #f1f5f9;       
+  --cor-texto-principal: #111827;   
+  --cor-topo-fundo: #000000;        
+  --cor-topo-texto: #ffffff;        
+  --cor-primaria: #00b4d8;          
+  --cor-primaria-hover: #0077b6;    
+  --cor-card-fundo: #ffffff;        
+  --cor-card-borda: #cbd5e1;        
+}
+
+/* ESTILOS BASE */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+body {
+  background-color: var(--cor-fundo-geral);
+  color: var(--cor-texto-principal);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.meu-header {
+  background-color: var(--cor-topo-fundo);
+  color: var(--cor-topo-texto);
+  padding: 15px 30px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.logo {
+  font-size: 24px;
+  font-weight: 900;
+  letter-spacing: 1px;
+  text-decoration: none;
+  color: var(--cor-topo-texto);
+}
+
+.logo span {
+  color: var(--cor-primaria);
+}
+
+.menu-links span {
+  font-size: 14px;
+  font-weight: bold;
+  color: var(--cor-primaria);
+}
+
+.container-admin {
+  max-width: 1200px;
+  margin: 40px auto;
+  padding: 0 20px;
+  width: 100%;
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 30px;
+}
+
+@media (max-width: 768px) {
+  .container-admin {
+    grid-template-columns: 1fr;
+  }
+}
+
+.card-admin {
+  background-color: var(--cor-card-fundo);
+  border: 1px solid var(--cor-card-borda);
+  border-radius: 12px;
+  padding: 30px;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.02);
+  margin-bottom: 30px;
+}
+
+.card-admin h2 {
+  font-size: 20px;
+  font-weight: 800;
+  margin-bottom: 20px;
+  border-bottom: 2px solid #f1f5f9;
+  padding-bottom: 10px;
+}
+
+/* Seletores de Cores */
+.seletor-cor-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.seletor-cor-item label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #475569;
+}
+
+.seletor-cor-item input[type="color"] {
+  border: none;
+  width: 45px;
+  height: 35px;
+  border-radius: 6px;
+  cursor: pointer;
+  background: none;
+}
+
+.btn-salvar-tema {
+  width: 100%;
+  background-color: var(--cor-primaria);
+  color: white;
+  border: none;
+  padding: 12px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s;
+  margin-top: 10px;
+}
+
+.btn-salvar-tema:hover {
+  background-color: var(--cor-primaria-hover);
+}
+
+/* Tabelas Administrativas */
+.lista-admin {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 10px;
+}
+
+.lista-admin th {
+  text-align: left;
+  padding: 12px;
+  background-color: #f8fafc;
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 600;
+  border-bottom: 2px solid #e2e8f0;
+}
+
+.lista-admin td {
+  padding: 14px 12px;
+  border-bottom: 1px solid #f1f5f9;
+  font-size: 14px;
+}
+
+/* Botões do Painel */
+.btn-senha {
+  background-color: #f1f5f9;
+  color: #475569;
+  border: 1px solid #cbd5e1;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 12px;
+  cursor: pointer;
+  margin-right: 4px;
+}
+
+.btn-senha:hover {
+  background-color: #e2e8f0;
+}
+
+.btn-excluir {
+  background-color: #fee2e2;
+  color: #b91c1c;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.btn-excluir:hover {
+  background-color: #fca5a5;
+}
+
+/* Indicadores de Armazenamento e Envio */
+.badge-armazenamento {
+  display: block;
+  font-size: 12px;
+  font-weight: bold;
+  color: #475569;
+}
+
+.sub-badge {
+  font-size: 11px;
+  color: #94a3b8;
+  font-weight: normal;
+}

@@ -1,0 +1,188 @@
+/* VARIÁVEIS COM A SUA IDENTIDADE VISUAL */
+:root {
+  --cor-fundo-geral: #ffffff;       
+  --cor-texto-principal: #111827;   
+  --cor-topo-fundo: #000000;        
+  --cor-topo-texto: #ffffff;        
+  --cor-primaria: #00b4d8;          
+  --cor-primaria-hover: #0077b6;    
+  --cor-card-fundo: #ffffff;        
+  --cor-card-borda: #e2e8f0;        
+}
+
+/* ESTILOS BASE */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+body {
+  background-color: var(--cor-fundo-geral);
+  color: var(--cor-texto-principal);
+}
+
+/* Header */
+.meu-header {
+  background-color: var(--cor-topo-fundo);
+  color: var(--cor-topo-texto);
+  padding: 15px 30px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.logo {
+  font-size: 24px;
+  font-weight: 900;
+  letter-spacing: 1px;
+  text-decoration: none;
+  color: var(--cor-topo-texto);
+}
+
+.logo span {
+  color: var(--cor-primaria);
+}
+
+.menu-links a {
+  color: var(--cor-topo-texto);
+  text-decoration: none;
+  margin-left: 20px;
+  font-size: 14px;
+}
+
+/* Banner do Evento */
+.banner-evento {
+  background-color: #1e293b;
+  color: white;
+  padding: 40px 20px;
+  text-align: center;
+}
+
+.banner-evento h1 {
+  font-size: 28px;
+  font-weight: 800;
+  margin-bottom: 8px;
+}
+
+.banner-evento p {
+  color: #94a3b8;
+  font-size: 14px;
+}
+
+/* Barra de Busca por Número */
+.barra-busca-atleta {
+  max-width: 500px;
+  margin: -25px auto 40px auto;
+  background: white;
+  padding: 10px;
+  border-radius: 50px;
+  box-shadow: 0 10px 20px rgba(0,0,0,0.08);
+  display: flex;
+  border: 1px solid var(--cor-card-borda);
+}
+
+.input-atleta {
+  flex: 1;
+  border: none;
+  outline: none;
+  padding: 0 20px;
+  font-size: 16px;
+  border-radius: 50px;
+}
+
+.btn-busca-atleta {
+  background-color: var(--cor-primaria);
+  color: white;
+  border: none;
+  padding: 12px 25px;
+  border-radius: 50px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.btn-busca-atleta:hover {
+  background-color: var(--cor-primaria-hover);
+}
+
+/* Grid de Fotos */
+.vitrine-fotos {
+  max-width: 1200px;
+  margin: 0 auto 60px auto;
+  padding: 0 20px;
+}
+
+.grid-fotos {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 20px;
+}
+
+.card-foto {
+  background-color: var(--cor-card-fundo);
+  border: 1px solid var(--cor-card-borda);
+  border-radius: 12px;
+  overflow: hidden;
+  position: relative;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.02);
+}
+
+/* Container da Imagem com Marca d'água Simulada */
+.wrapper-imagem {
+  position: relative;
+  width: 100%;
+  height: 240px;
+  background-color: #f1f5f9;
+}
+
+.wrapper-imagem img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Marca d'água simulada por CSS */
+.marca-dagua {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) rotate(-30deg);
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 32px;
+  font-weight: 900;
+  letter-spacing: 4px;
+  pointer-events: none;
+  white-space: nowrap;
+  text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+}
+
+.info-foto {
+  padding: 15px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.preco-foto {
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--cor-texto-principal);
+}
+
+.btn-carrinho {
+  background-color: #111827;
+  color: white;
+  border: none;
+  padding: 8px 14px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.btn-carrinho:hover {
+  background-color: var(--cor-primaria);
+}

@@ -1,0 +1,175 @@
+// ==========================================================
+// iphotos — Modelo de Dados (Prisma / PostgreSQL)
+// ==========================================================
+// Rode `npx prisma migrate dev` após configurar DATABASE_URL no .env
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum PapelUsuario {
+  CLIENTE
+  FOTOGRAFO
+}
+
+enum ProvedorNuvem {
+  S3
+  R2
+}
+
+enum StatusPedido {
+  PENDENTE
+  PAGO
+  EXPIRADO
+  CANCELADO
+}
+
+enum StatusSaque {
+  PENDENTE
+  PAGO
+  RECUSADO
+}
+
+enum TipoDesconto {
+  PERCENTUAL
+  VALOR_FIXO
+}
+
+model Usuario {
+  id            String        @id @default(uuid())
+  nome          String
+  email         String        @unique
+  senhaHash     String
+  papel         PapelUsuario
+  whatsapp      String?
+  chavePix      String?
+  // Roteamento multi-cloud: cada fotógrafo pode salvar em um provedor diferente
+  provedorNuvem ProvedorNuvem @default(R2)
+  // Taxa de comissão da plataforma aplicada individualmente a este fotógrafo (%)
+  taxaComissao  Decimal       @default(15.0) @db.Decimal(5, 2)
+  ativo         Boolean       @default(true)
+  criadoEm      DateTime      @default(now())
+
+  eventos            Evento[]
+  pedidos            Pedido[]
+  solicitacoesSaques SolicitacaoSaque[]
+
+  @@index([papel])
+}
+
+model Evento {
+  id              String   @id @default(uuid())
+  titulo          String
+  categoria       String // vaquejada | ciclismo | corrida | futebol
+  local           String
+  dataRealizacao  DateTime
+  fotoCapaUrl     String?
+  fotografoId     String
+  fotografo       Usuario  @relation(fields: [fotografoId], references: [id], onDelete: Cascade)
+  precoPorFoto    Decimal  @default(15.0) @db.Decimal(10, 2)
+  criadoEm        DateTime @default(now())
+  // Regra de negócio: expira e é apagado 30 dias após a criação
+  expiraEm        DateTime
+
+  fotos Foto[]
+
+  @@index([categoria])
+  @@index([expiraEm])
+}
+
+model Foto {
+  id            String   @id @default(uuid())
+  eventoId      String
+  evento        Evento   @relation(fields: [eventoId], references: [id], onDelete: Cascade)
+
+  // Chave/objeto no bucket PRIVADO (arquivo original, intacto, alta resolução)
+  chaveOriginal String
+
+  // URL pública do arquivo comprimido + marca d'água (bucket público)
+  urlPublica    String
+
+  preco         Decimal  @default(15.0) @db.Decimal(10, 2)
+  criadoEm      DateTime @default(now())
+
+  itensPedido ItemPedido[]
+
+  @@index([eventoId])
+}
+
+model Cupom {
+  id                 String       @id @default(uuid())
+  codigo             String       @unique
+  tipoDesconto       TipoDesconto
+  valorDesconto      Decimal      @db.Decimal(10, 2) // percentual (0-100) ou valor fixo em R$
+  limiteUsos         Int?
+  usosRealizados     Int          @default(0)
+  ativo              Boolean      @default(true)
+  expiraEm           DateTime?
+  criadoEm           DateTime     @default(now())
+
+  pedidos Pedido[]
+}
+
+model Pedido {
+  id            String       @id @default(uuid())
+  clienteId     String
+  cliente       Usuario      @relation(fields: [clienteId], references: [id])
+  status        StatusPedido @default(PENDENTE)
+
+  subtotal      Decimal      @db.Decimal(10, 2)
+  descontoValor Decimal      @default(0) @db.Decimal(10, 2)
+  total         Decimal      @db.Decimal(10, 2)
+
+  cupomId       String?
+  cupom         Cupom?       @relation(fields: [cupomId], references: [id])
+
+  // Dados da cobrança Pix (provedor de pagamento)
+  pixTxId       String?      @unique
+  pixCopiaCola  String?
+  pixQrCodeBase64 String?
+  pagoEm        DateTime?
+
+  criadoEm      DateTime     @default(now())
+
+  itens ItemPedido[]
+
+  @@index([status])
+  @@index([clienteId])
+}
+
+model ItemPedido {
+  id        String  @id @default(uuid())
+  pedidoId  String
+  pedido    Pedido  @relation(fields: [pedidoId], references: [id], onDelete: Cascade)
+  fotoId    String
+  foto      Foto    @relation(fields: [fotoId], references: [id])
+  preco     Decimal @db.Decimal(10, 2)
+
+  @@index([pedidoId])
+  @@index([fotoId])
+}
+
+model SolicitacaoSaque {
+  id            String      @id @default(uuid())
+  fotografoId   String
+  fotografo     Usuario     @relation(fields: [fotografoId], references: [id])
+  valor         Decimal     @db.Decimal(10, 2)
+  chavePix      String
+  status        StatusSaque @default(PENDENTE)
+  solicitadoEm  DateTime    @default(now())
+  pagoEm        DateTime?
+
+  @@index([fotografoId])
+  @@index([status])
+}
+
+model ConfiguracaoPlataforma {
+  id               Int     @id @default(1)
+  taxaComissaoBase Decimal @default(15.0) @db.Decimal(5, 2)
+  corPrimaria      String  @default("#00b4d8")
+}

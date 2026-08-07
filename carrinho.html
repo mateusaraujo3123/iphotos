@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Carrinho de Compras - iphotos</title>
+  <!-- Link direcionado para o estilo separado do carrinho -->
+  <link rel="stylesheet" href="carrinho.css">
+  <script src="api-config.js"></script>
+</head>
+<body>
+
+  <!-- HEADER -->
+  <header class="meu-header">
+    <a href="index.html" class="logo">iphoto<span>s</span></a>
+    <nav class="menu-links">
+      <a href="index.html">Continuar Comprando</a>
+    </nav>
+  </header>
+
+  <!-- CONTEÚDO DO CARRINHO -->
+  <div class="container-carrinho">
+    
+    <!-- COLUNA 1: ITENS SELECIONADOS -->
+    <div class="card-carrinho">
+      <h2>Suas Fotos Escolhidas</h2>
+      <div id="lista-fotos-carrinho">
+        <p style="color:#64748b;">Carregando carrinho...</p>
+      </div>
+    </div>
+
+    <!-- COLUNA 2: RESUMO DO VALOR E PIX -->
+    <div class="card-carrinho">
+      <h2>Resumo</h2>
+
+      <div class="grupo-input" style="margin-bottom:12px;">
+        <label for="input-cupom" style="font-size:13px; font-weight:600;">Cupom de desconto</label>
+        <div style="display:flex; gap:8px;">
+          <input type="text" id="input-cupom" placeholder="Ex: BEMVINDO10" style="flex:1; padding:8px; border:1px solid #cbd5e1; border-radius:6px;" />
+          <button class="btn-checkout" style="width:auto; padding:8px 14px;" onclick="renderizarResumo()">Aplicar</button>
+        </div>
+      </div>
+
+      <div class="linha-resumo">
+        <span>Quantidade:</span>
+        <span id="resumo-quantidade">0 arquivos digitais</span>
+      </div>
+      <div class="linha-resumo">
+        <span>Envio:</span>
+        <span>Download imediato após PIX</span>
+      </div>
+      <div class="linha-resumo total">
+        <span>Total:</span>
+        <span id="resumo-total">R$ 0,00</span>
+      </div>
+
+      <p id="erro-carrinho" style="color:#e63946; font-size:13px; display:none;"></p>
+
+      <button class="btn-checkout" id="btn-pagar" onclick="gerarPagamentoPix()">Gerar Pagamento PIX</button>
+
+      <!-- Interface de Pagamento via Código Copia e Cola / QR Code -->
+      <div class="area-pix" id="bloco-pix" style="display:none;">
+        <p style="font-size: 14px; font-weight: bold; color: #00b4d8;">PIX Gerado com Sucesso!</p>
+        <img id="qr-code-real" src="" alt="QR Code Pix" style="width:180px; height:180px; margin:0 auto; display:block;" />
+        <p style="font-size: 12px; color: #64748b; margin: 12px 0;">Escaneie o código ou utilize o Pix Copia e Cola abaixo:</p>
+        <input type="text" id="pix-copia-cola" value="" readonly style="width: 100%; padding: 8px; font-size: 11px; text-align: center; border: 1px solid #cbd5e1; border-radius: 4px; background: #f1f5f9; outline: none;" />
+        <p id="status-pagamento" style="font-size: 13px; color: #64748b; margin-top: 12px;">Aguardando confirmação do pagamento...</p>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    const CHAVE_CARRINHO = 'iphotos_carrinho';
+    let intervaloPolling = null;
+
+    function getCarrinho() {
+      return JSON.parse(localStorage.getItem(CHAVE_CARRINHO) || '[]');
+    }
+
+    function removerDoCarrinho(fotoId) {
+      const carrinho = getCarrinho().filter(f => f.id !== fotoId);
+      localStorage.setItem(CHAVE_CARRINHO, JSON.stringify(carrinho));
+      renderizarCarrinho();
+    }
+
+    function renderizarCarrinho() {
+      const carrinho = getCarrinho();
+      const lista = document.getElementById('lista-fotos-carrinho');
+
+      if (!carrinho.length) {
+        lista.innerHTML = '<p style="color:#64748b;">Seu carrinho está vazio. <a href="index.html">Ver eventos</a></p>';
+      } else {
+        lista.innerHTML = carrinho.map(f => `
+          <div class="foto-item">
+            <div class="foto-preview-box" style="background-image:url('${f.urlPublica}'); background-size:cover; background-position:center;"></div>
+            <div class="foto-meta">
+              <h4>Foto digital</h4>
+              <p>Item do carrinho</p>
+            </div>
+            <div class="foto-preco">R$ ${Number(f.preco).toFixed(2).replace('.', ',')}</div>
+            <button onclick="removerDoCarrinho('${f.id}')" style="background:none; border:none; color:#e63946; cursor:pointer; font-size:13px;">Remover</button>
+          </div>
+        `).join('');
+      }
+      renderizarResumo();
+    }
+
+    function renderizarResumo() {
+      const carrinho = getCarrinho();
+      const subtotal = carrinho.reduce((soma, f) => soma + Number(f.preco), 0);
+      document.getElementById('resumo-quantidade').innerText = `${carrinho.length} arquivo(s) digital(is)`;
+      document.getElementById('resumo-total').innerText = `R$ ${subtotal.toFixed(2).replace('.', ',')}`;
+    }
+
+    async function gerarPagamentoPix() {
+      const erroEl = document.getElementById('erro-carrinho');
+      erroEl.style.display = 'none';
+
+      if (!AuthStorage.getToken()) {
+        alert('Faça login para finalizar a compra.');
+        window.location.href = 'login.html';
+        return;
+      }
+
+      const carrinho = getCarrinho();
+      if (!carrinho.length) {
+        erroEl.innerText = 'Seu carrinho está vazio.';
+        erroEl.style.display = 'block';
+        return;
+      }
+
+      const codigoCupom = document.getElementById('input-cupom').value.trim();
+      const btn = document.getElementById('btn-pagar');
+      btn.disabled = true;
+      btn.innerText = 'Gerando cobrança Pix...';
+
+      try {
+        const pedido = await apiFetch('/pedidos', {
+          method: 'POST',
+          body: JSON.stringify({ fotoIds: carrinho.map(f => f.id), codigoCupom: codigoCupom || undefined })
+        });
+
+        localStorage.setItem('iphotos_pedido_atual', pedido.id);
+        document.getElementById('bloco-pix').style.display = 'block';
+        document.getElementById('pix-copia-cola').value = pedido.pixCopiaCola || '';
+        if (pedido.pixQrCodeBase64) {
+          document.getElementById('qr-code-real').src = `data:image/png;base64,${pedido.pixQrCodeBase64}`;
+        }
+        btn.style.display = 'none';
+
+        iniciarPollingPagamento(pedido.id);
+      } catch (err) {
+        erroEl.innerText = err.message;
+        erroEl.style.display = 'block';
+        btn.disabled = false;
+        btn.innerText = 'Gerar Pagamento PIX';
+      }
+    }
+
+    function iniciarPollingPagamento(pedidoId) {
+      const statusEl = document.getElementById('status-pagamento');
+      intervaloPolling = setInterval(async () => {
+        try {
+          const pedido = await apiFetch(`/pedidos/${pedidoId}`);
+          if (pedido.status === 'PAGO') {
+            clearInterval(intervaloPolling);
+            statusEl.innerText = 'Pagamento confirmado! Redirecionando...';
+            localStorage.removeItem(CHAVE_CARRINHO);
+            window.location.href = 'sucesso.html';
+          } else if (['CANCELADO', 'EXPIRADO'].includes(pedido.status)) {
+            clearInterval(intervaloPolling);
+            statusEl.innerText = 'Este pagamento foi cancelado ou expirou. Gere um novo Pix.';
+          }
+        } catch (err) {
+          console.error('Erro ao checar pagamento:', err);
+        }
+      }, 4000);
+    }
+
+    window.onload = renderizarCarrinho;
+  </script>
+</body>
+</html>

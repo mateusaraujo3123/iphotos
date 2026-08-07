@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cadastro - iphotos</title>
+  <style>
+    :root {
+      --cor-fundo-geral: #f8fafc;       
+      --cor-texto-principal: #111827;   
+      --cor-topo-fundo: #000000;        
+      --cor-topo-texto: #ffffff;        
+      --cor-primaria: #00b4d8;          
+      --cor-primaria-hover: #0077b6;    
+      --cor-card-fundo: #ffffff;        
+      --cor-card-borda: #e2e8f0;        
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: system-ui, -apple-system, sans-serif;
+    }
+
+    body {
+      background-color: var(--cor-fundo-geral);
+      color: var(--cor-texto-principal);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .meu-header {
+      background-color: var(--cor-topo-fundo);
+      color: var(--cor-topo-texto);
+      padding: 15px 30px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .logo {
+      font-size: 24px;
+      font-weight: 900;
+      letter-spacing: 1px;
+      text-decoration: none;
+      color: var(--cor-topo-texto);
+    }
+
+    .logo span {
+      color: var(--cor-primaria);
+    }
+
+    .container-cadastro {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 40px 20px;
+    }
+
+    .card-cadastro {
+      background-color: var(--cor-card-fundo);
+      border: 1px solid var(--cor-card-borda);
+      border-radius: 12px;
+      width: 100%;
+      max-width: 500px;
+      padding: 40px 30px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+    }
+
+    .card-cadastro h2 {
+      font-size: 24px;
+      font-weight: 800;
+      margin-bottom: 8px;
+      text-align: center;
+    }
+
+    .subtitulo {
+      font-size: 14px;
+      color: #64748b;
+      text-align: center;
+      margin-bottom: 30px;
+    }
+
+    .subtitulo a {
+      color: var(--cor-primaria);
+      text-decoration: none;
+      font-weight: 600;
+    }
+
+    .seletor-perfil {
+      display: flex;
+      background-color: #f1f5f9;
+      padding: 4px;
+      border-radius: 8px;
+      margin-bottom: 24px;
+    }
+
+    .opcao-perfil {
+      flex: 1;
+      text-align: center;
+      padding: 10px;
+      font-size: 14px;
+      font-weight: 600;
+      color: #64748b;
+      cursor: pointer;
+      border-radius: 6px;
+    }
+
+    .opcao-perfil.ativo {
+      background-color: white;
+      color: var(--cor-texto-principal);
+      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+
+    .grupo-input {
+      margin-bottom: 18px;
+    }
+
+    .grupo-input label {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 6px;
+      color: #334155;
+    }
+
+    .grupo-input input, .grupo-input select {
+      width: 100%;
+      padding: 12px 16px;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      font-size: 14px;
+      outline: none;
+    }
+
+    .campos-fotógrafo {
+      display: none;
+    }
+
+    .btn-enviar {
+      width: 100%;
+      background-color: var(--cor-primaria);
+      color: white;
+      border: none;
+      padding: 14px;
+      border-radius: 8px;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      margin-top: 10px;
+      transition: background 0.2s;
+    }
+
+    .btn-enviar:hover {
+      background-color: var(--cor-primaria-hover);
+    }
+  </style>
+</head>
+<body>
+
+  <header class="meu-header">
+    <a href="index.html" class="logo">iphoto<span>s</span></a>
+    <nav class="menu-links">
+      <a href="index.html" style="color: white; text-decoration: none; font-size: 14px;">Voltar para a Home</a>
+    </nav>
+  </header>
+
+  <div class="container-cadastro">
+    <div class="card-cadastro">
+      <h2>Crie sua conta</h2>
+      <p class="subtitulo">Já possui cadastro? <a href="login.html">Faça login</a></p>
+      
+      <div class="seletor-perfil">
+        <div class="opcao-perfil ativo" id="aba-cliente" onclick="mudarAba('cliente')">Sou Cliente</div>
+        <div class="opcao-perfil" id="aba-fotografo" onclick="mudarAba('fotografo')">Sou Fotógrafo</div>
+      </div>
+
+      <!-- Executa a função JavaScript que decide para onde redirecionar -->
+      <form onsubmit="executarCadastro(event)">
+        <div class="grupo-input">
+          <label for="nome">Nome Completo</label>
+          <input type="text" id="nome" placeholder="Seu nome" required />
+        </div>
+
+        <div class="grupo-input">
+          <label for="email">E-mail</label>
+          <input type="email" id="email" placeholder="seu@email.com" required />
+        </div>
+
+        <div id="campos-extras" class="campos-fotógrafo">
+          <div class="grupo-input">
+            <label for="regiao">Região principal de atuação</label>
+            <select id="regiao">
+              <option value="">Selecione seu Estado</option>
+              <option value="PE">Pernambuco</option>
+              <option value="AL">Alagoas</option>
+              <option value="PB">Paraíba</option>
+            </select>
+          </div>
+          <div class="grupo-input">
+            <label for="portfolio">Link do Portfólio / Instagram</label>
+            <input type="url" id="portfolio" placeholder="https://instagram.com" />
+          </div>
+        </div>
+
+        <div class="grupo-input">
+          <label for="senha">Crie uma Senha</label>
+          <input type="password" id="senha" placeholder="No mínimo 6 caracteres" required />
+        </div>
+        
+        <button type="submit" class="btn-enviar">Criar Conta</button>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    let perfilAtual = 'cliente';
+
+    function mudarAba(tipo) {
+      perfilAtual = tipo;
+      const abaCliente = document.getElementById('aba-cliente');
+      const abaFotografo = document.getElementById('aba-fotografo');
+      const camposExtras = document.getElementById('campos-extras');
+      const portfolioInput = document.getElementById('portfolio');
+
+      if (tipo === 'cliente') {
+        abaCliente.classList.add('ativo');
+        abaFotografo.classList.remove('ativo');
+        camposExtras.style.display = 'none';
+        portfolioInput.removeAttribute('required');
+      } else {
+        abaFotografo.classList.add('ativo');
+        abaCliente.classList.remove('ativo');
+        camposExtras.style.display = 'block';
+        portfolioInput.setAttribute('required', 'true');
+      }
+    }
+
+    // Redireciona de acordo com o perfil selecionado
+    function ejecutarCadastro(e) {
+      e.preventDefault();
+      if (perfilAtual === 'fotografo') {
+        window.location.href = 'painel-fotografo.html';
+      } else {
+        window.location.href = 'index.html';
+      }
+    }
+  </script>
+
+</body>
+</html>

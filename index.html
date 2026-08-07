@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>iphotos - Encontre suas fotos</title>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    .btn-suporte-flutuante { position: fixed; bottom: 20px; right: 20px; background-color: #25d366; color: white; width: 56px; height: 56px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 28px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); text-decoration: none; z-index: 9999; }
+    .tooltip-suporte { position: absolute; right: 68px; background-color: #111827; color: white; padding: 6px 12px; border-radius: 6px; font-size: 12px; font-weight: 600; white-space: nowrap; opacity: 0; pointer-events: none; transition: opacity 0.2s; }
+    .btn-suporte-flutuante:hover .tooltip-suporte { opacity: 1; }
+    
+    /* Configuração visual para o bloco dinâmico do usuário no menu */
+    #usuario-logado-header a { font-weight: bold; color: var(--cor-primaria); text-decoration: none; margin-left: 8px; }
+  </style>
+  <script src="api-config.js"></script>
+</head>
+<body>
+
+  <!-- HEADER MODIFICADO -->
+  <header class="meu-header" id="header-dinamico">
+    <a href="index.html" class="logo">iphoto<span id="logo-dot">s</span></a>
+    <nav class="menu-links">
+      <a href="minhas-compras.html">Minhas compras</a>
+      <a href="cadastro.html">Sou Fotógrafo</a>
+      <a href="cadastro.html">Organização</a>
+    </nav>
+    
+    <div id="area-auth-header">
+      <!-- Botão Login Padrão -->
+      <a href="login.html" class="btn-login" id="btn-login-dinamico">Login</a>
+      
+      <!-- Bloco que assume o lugar do botão de Login após autenticação -->
+      <div id="usuario-logado-header" style="display: none; align-items: center; color: white; font-size: 14px; font-weight: 500;">
+        <span>Olá, <span id="nome-usuario-header" style="color: var(--cor-primaria); font-weight: bold;">Usuário</span> 👋</span>
+        <a href="#" onclick="efetuarLogoutSistema()">[Sair]</a>
+      </div>
+    </div>
+  </header>
+
+  <div class="faixa-aviso" id="faixa-dinamica">
+    Você está vendo eventos do Brasil 🔽
+  </div>
+
+  <section class="hero">
+    <h1>suas fotos aqui!</h1>
+    <div class="container-busca">
+      <input type="text" id="campo-busca-texto" placeholder="Digite o nome do evento..." class="input-busca" oninput="filtrarEventos()" />
+      <button class="btn-busca" id="btn-busca-dinamico">🔍</button>
+    </div>
+  </section>
+
+  <div class="barra-categorias">
+    <div class="container-categorias" id="container-botoes-categorias"></div>
+  </div>
+
+  <div class="conteudo">
+    <div class="titulo-secao">
+      <h2 id="titulo-listagem">Todos os Eventos</h2>
+      <span class="tag-status" id="contador-eventos">0 disponíveis</span>
+    </div>
+    <div class="grid-eventos" id="grid-eventos-dinamico"></div>
+  </div>
+
+  <a href="https://wa.me" target="_blank" class="btn-suporte-flutuante">
+    <span class="tooltip-suporte">Precisa de ajuda? Suporte</span>💬
+  </a>
+  <!-- SCRIPT DE INTERATIVIDADE, FILTRAGEM E ACESSOS DA API -->
+  <script>
+    const listaCategoriasBD = [
+      { id: "vaquejada", nome: "Vaquejada", iconeURL: "vaquejada.png", altFallback: "🐎", tituloSecao: "Coberturas de Vaquejada" },
+      { id: "ciclismo", nome: "Ciclismo", iconeURL: "ciclismo.png", altFallback: "🚴", tituloSecao: "Eventos de Ciclismo" },
+      { id: "corrida", nome: "Corrida", iconeURL: "corrida.png", altFallback: "🏃", tituloSecao: "Corridas de Rua" },
+      { id: "futebol", nome: "Futebol", iconeURL: "futebol.png", altFallback: "⚽", tituloSecao: "Partidas de Futebol" }
+    ];
+
+    let eventosBD = []; 
+    let categoriaSelecionada = 'todos';
+    let ordemDoAdmin = ['vaquejada', 'ciclismo', 'corrida', 'futebol'];
+    let coresCategoria = { vaquejada: '#00b4d8', ciclismo: '#00b4d8', corrida: '#00b4d8', futebol: '#00b4d8' };
+
+    window.onload = () => {
+      if(localStorage.getItem('iphotos_primaria')) {
+        document.documentElement.style.setProperty('--cor-primaria', localStorage.getItem('iphotos_primaria'));
+      }
+      if(localStorage.getItem('iphotos_topo')) {
+        document.getElementById('header-dinamico').style.backgroundColor = localStorage.getItem('iphotos_topo');
+      }
+      if(localStorage.getItem('iphotos_cores_cat')) {
+        coresCategoria = JSON.parse(localStorage.getItem('iphotos_cores_cat'));
+      }
+      if(localStorage.getItem('iphotos_ordem')) {
+        ordemDoAdmin = JSON.parse(localStorage.getItem('iphotos_ordem'));
+      }
+
+      // NOVO: Executa a checagem de usuário logado
+      verificarStatusLoginHome();
+
+      gerarBotonesCategoriasMecanico();
+      carregarEventosDoServidor();
+    };
+
+    // Oculta o botão de Login e exibe a saudação real ao comprador
+    function verificarStatusLoginHome() {
+      const nomeSalvo = AuthStorage.getNome();
+      const btnLogin = document.getElementById('btn-login-dinamico');
+      const blocoUsuario = document.getElementById('usuario-logado-header');
+      const txtNome = document.getElementById('nome-usuario-header');
+
+      if (nomeSalvo) {
+        btnLogin.style.display = 'none';
+        blocoUsuario.style.display = 'flex';
+        txtNome.innerText = nomeSalvo;
+      } else {
+        btnLogin.style.display = 'block';
+        blocoUsuario.style.display = 'none';
+      }
+    }
+
+    // Ícone de fallback por categoria (a API não guarda emoji, só o slug da categoria)
+    const emojiPorCategoria = { vaquejada: '🐎', ciclismo: '🚴', corrida: '🏃', futebol: '⚽' };
+
+    function formatarData(isoString) {
+      if (!isoString) return '';
+      const d = new Date(isoString);
+      return d.toLocaleDateString('pt-BR');
+    }
+
+    async function carregarEventosDoServidor() {
+      try {
+        const resp = await fetch(`${API_URL}/eventos`);
+        const eventos = await resp.json();
+        eventosBD = eventos.map(ev => ({
+          id: ev.id,
+          titulo: ev.titulo,
+          categoria: ev.categoria,
+          altFallback: emojiPorCategoria[ev.categoria] || '📷',
+          fotoCapaURL: ev.fotoCapaUrl || 'https://placehold.co/600x400?text=iphotos',
+          local: ev.local,
+          data: formatarData(ev.dataRealizacao),
+          totalFotos: ev._count?.fotos || 0,
+        }));
+      } catch (err) {
+        console.error('Falha ao carregar eventos:', err);
+        eventosBD = [];
+      }
+      filtrarEventos();
+    }
+
+    function gerarBotonesCategoriasMecanico() {
+      const container = document.getElementById('container-botoes-categorias');
+      container.innerHTML = `
+        <button class="btn-categoria ativo" id="cat-todos" onclick="filtrarPorCategoria('todos')">
+          <img src="assets/categorias/todos.png" alt="Todos" class="img-categoria" onerror="this.src='https://placehold.co🌐'">
+          <span>Todos</span>
+        </button>
+      `;
+      listaCategoriasBD.forEach(cat => {
+        container.innerHTML += `
+          <button class="btn-categoria" id="cat-${cat.id}" onclick="filtrarPorCategoria('${cat.id}')">
+            <img src="assets/categorias/${cat.iconeURL}" alt="${cat.nome}" class="img-categoria" onerror="this.src='https://placehold.co${cat.altFallback}'">
+            <span>${cat.nome}</span>
+          </button>
+        `;
+      });
+    }
+
+    function renderizarEventos(lista) {
+      const grid = document.getElementById('grid-eventos-dinamico');
+      const contador = document.getElementById('contador-eventos');
+      grid.innerHTML = "";
+      contador.innerText = `${lista.length} ${lista.length === 1 ? 'disponível' : 'disponíveis'}`;
+
+      if (lista.length === 0) {
+        grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:40px;color:#64748b;">Nenhum evento encontrado</div>`;
+        return;
+      }
+
+      lista.sort((a, b) => { return ordemDoAdmin.indexOf(a.categoria) - ordemDoAdmin.indexOf(b.categoria); });
+
+      lista.forEach(evento => {
+        const corDaTag = coresCategoria[evento.categoria] || 'var(--cor-primaria)';
+        grid.innerHTML += `
+          <a href="evento.html?id=${evento.id}" class="card-evento">
+            <div class="card-capa-wrapper">
+              <span class="badge-icone-categoria">${evento.altFallback}</span>
+              <img src="${evento.fotoCapaURL}" alt="${evento.titulo}" class="img-capa-evento" onerror="this.src='https://placehold.co'">
+            </div>
+            <div class="card-info">
+              <div>
+                <h3>${evento.titulo}</h3>
+                <div class="card-detalhes"><p>📍 ${evento.local}</p><p>📅 ${evento.data}</p></div>
+              </div>
+              <span class="tag-categoria" style="color: ${corDaTag}">${evento.categoria}</span>
+            </div>
+          </a>
+        `;
+      });
+    }
+
+    function filtrarPorCategoria(categoria) {
+      categoriaSelecionada = categoria;
+      document.querySelectorAll('.btn-categoria').forEach(btn => btn.classList.remove('ativo'));
+      document.getElementById(`cat-${categoria}`).classList.add('ativo');
+      
+      if(categoria === 'todos') {
+        document.getElementById('logo-dot').style.color = 'var(--cor-primaria)';
+        document.getElementById('btn-login-dinamico').style.backgroundColor = 'var(--cor-primaria)';
+        document.getElementById('faixa-dinamica').style.backgroundColor = 'var(--cor-primaria)';
+        document.getElementById('btn-busca-dinamico').style.backgroundColor = 'var(--cor-primaria)';
+        document.getElementById('titulo-listagem').innerText = "Todos os Eventos";
+      } else {
+        const corAtiva = coresCategoria[categoria] || 'var(--cor-primaria)';
+        document.getElementById('logo-dot').style.color = corAtiva;
+        document.getElementById('btn-login-dinamico').style.backgroundColor = corAtiva;
+        document.getElementById('faixa-dinamica').style.backgroundColor = corAtiva;
+        document.getElementById('btn-busca-dinamico').style.backgroundColor = corAtiva;
+        const catInfo = listaCategoriasBD.find(c => c.id === categoria);
+        document.getElementById('titulo-listagem').innerText = catInfo ? catInfo.tituloSecao : "Eventos";
+      }
+      filtrarEventos();
+    }
+
+    function filtrarEventos() {
+      const textoBusca = document.getElementById('campo-busca-texto').value.toLowerCase();
+      const resultado = eventosBD.filter(evento => {
+        const matchesCategoria = (categoriaSelecionada === 'todos' || evento.categoria === categoriaSelecionada);
+        const matchesTexto = evento.titulo.toLowerCase().includes(textoBusca) || evento.local.toLowerCase().includes(textoBusca);
+        return matchesCategoria && matchesTexto;
+      });
+      renderizarEventos(resultado);
+    }
+  </script>
+</body>
+</html>

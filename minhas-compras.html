@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Minhas Compras - iphotos</title>
+  <link rel="stylesheet" href="minhas-compras.css">
+  <script src="api-config.js"></script>
+</head>
+<body>
+
+  <!-- HEADER -->
+  <header class="meu-header">
+    <a href="index.html" class="logo">iphoto<span>s</span></a>
+    <nav class="menu-links">
+      <a href="index.html">Voltar para a Home</a>
+    </nav>
+  </header>
+
+  <!-- CONTEÚDO PRINCIPAL -->
+  <div class="container-compras">
+    <h2 style="font-size: 24px; font-weight: 800; margin-bottom: 24px;">Minhas Compras Digitais</h2>
+
+    <div id="lista-pedidos">
+      <p style="color:#64748b;">Carregando suas compras...</p>
+    </div>
+  </div>
+
+  <script>
+    function formatarDataHora(iso) {
+      if (!iso) return '';
+      return new Date(iso).toLocaleDateString('pt-BR');
+    }
+
+    async function baixarEmAltaResolucao(fotoId, botao) {
+      const textoOriginal = botao.innerText;
+      botao.disabled = true;
+      botao.innerText = 'Gerando link seguro...';
+      try {
+        const { url } = await apiFetch(`/pagamentos/fotos/${fotoId}/download`);
+        window.location.href = url;
+      } catch (err) {
+        alert(err.message);
+      } finally {
+        botao.disabled = false;
+        botao.innerText = textoOriginal;
+      }
+    }
+
+    async function carregarCompras() {
+      const container = document.getElementById('lista-pedidos');
+
+      if (!AuthStorage.getToken()) {
+        container.innerHTML = '<p style="color:#64748b;">Você precisa <a href="login.html">entrar na sua conta</a> para ver suas compras.</p>';
+        return;
+      }
+
+      try {
+        const pedidos = await apiFetch('/pedidos');
+
+        if (!pedidos.length) {
+          container.innerHTML = '<p style="color:#64748b;">Você ainda não comprou nenhuma foto. <a href="index.html">Ver eventos</a></p>';
+          return;
+        }
+
+        container.innerHTML = pedidos.map(pedido => `
+          <div class="card-pedido">
+            <div class="pedido-header">
+              <div class="pedido-id">Pedido #${pedido.id.slice(0, 8).toUpperCase()} • <span style="font-weight: 500; color: #64748b; font-size: 13px;">Pago via Pix em ${formatarDataHora(pedido.pagoEm)}</span></div>
+              <span class="pedido-status">Arquivos Liberados</span>
+            </div>
+            <div class="grid-fotos-compradas">
+              ${pedido.itens.map(item => `
+                <div class="item-foto-comprada">
+                  <div class="miniatura-foto" style="background-image:url('${item.foto.urlPublica}'); background-size:cover; background-position:center;"></div>
+                  <div class="acoes-foto">
+                    <p style="font-size: 12px; font-weight: bold; margin-bottom: 8px; color:#475569;">${item.foto.evento?.titulo || 'Foto digital'}</p>
+                    <button class="btn-download" onclick="baixarEmAltaResolucao('${item.fotoId}', this)">Baixar em Alta Resolução</button>
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        `).join('');
+      } catch (err) {
+        container.innerHTML = `<p style="color:#e63946;">${err.message}</p>`;
+      }
+    }
+
+    window.onload = carregarCompras;
+  </script>
+
+</body>
+</html>

@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pagamento Confirmado - iphotos</title>
+  <link rel="stylesheet" href="sucesso.css">
+  <script src="api-config.js"></script>
+</head>
+<body>
+
+  <!-- HEADER -->
+  <header class="meu-header">
+    <a href="index.html" class="logo">iphoto<span>s</span></a>
+  </header>
+
+  <!-- CARD CENTRAL DE CONFIRMAÇÃO -->
+  <div class="container-sucesso">
+    <div class="card-sucesso">
+      
+      <div class="icone-sucesso-wrapper">✓</div>
+      
+      <h2>Pagamento Confirmado!</h2>
+      <p>Obrigado por sua compra. Seu PIX foi processado com sucesso e os arquivos digitais originais já foram liberados sem marcas d'água.</p>
+      
+      <!-- Resumo Técnico do Pedido (IDs preparados para a integração do Claude) -->
+      <div class="resumo-pedido-caixa">
+        <div class="linha-detalhe">
+          <span>Código do Pedido:</span>
+          <strong id="pedido-id-sucesso">—</strong>
+        </div>
+        <div class="linha-detalhe">
+          <span>Quantidade:</span>
+          <strong id="pedido-qtd-sucesso">—</strong>
+        </div>
+        <div class="linha-detalhe">
+          <span>Evento:</span>
+          <strong id="pedido-evento-sucesso">—</strong>
+        </div>
+        <div class="linha-detalhe" style="border-top: 1px solid #e2e8f0; padding-top: 8px; margin-top: 8px;">
+          <span>Valor Pago:</span>
+          <strong id="pedido-valor-sucesso" style="color: #166534; font-size: 14px;">—</strong>
+        </div>
+      </div>
+
+      <!-- Botões de Redirecionamento -->
+      <a href="minhas-compras.html" class="btn-sucesso-principal">Baixar Minhas Fotos Agora</a>
+      <a href="index.html" class="btn-sucesso-secundario">Voltar para a Página Inicial</a>
+
+    </div>
+  </div>
+
+  <script>
+    async function carregarResumoPedido() {
+      const pedidoId = localStorage.getItem('iphotos_pedido_atual');
+      if (!pedidoId || !AuthStorage.getToken()) return;
+
+      try {
+        const pedido = await apiFetch(`/pedidos/${pedidoId}`);
+        document.getElementById('pedido-id-sucesso').innerText = '#' + pedido.id.slice(0, 8).toUpperCase();
+        document.getElementById('pedido-qtd-sucesso').innerText = `${pedido.itens.length} Foto(s) Digital(is) (HD)`;
+        document.getElementById('pedido-evento-sucesso').innerText =
+          pedido.itens[0]?.foto?.evento?.titulo || 'Evento iphotos';
+        document.getElementById('pedido-valor-sucesso').innerText =
+          'R$ ' + Number(pedido.total).toFixed(2).replace('.', ',');
+      } catch (err) {
+        console.error('Não foi possível carregar o resumo do pedido:', err);
+      }
+    }
+    window.onload = carregarResumoPedido;
+  </script>
+
+</body>
+</html>

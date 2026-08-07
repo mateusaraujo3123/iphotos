@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login - iphotos</title>
+  <!-- Link direcionado para a folha de estilo única de acesso -->
+  <link rel="stylesheet" href="acesso.css">
+  <script src="api-config.js"></script>
+</head>
+<body>
+
+  <!-- HEADER -->
+  <header class="meu-header">
+    <a href="index.html" class="logo">iphoto<span>s</span></a>
+    <nav class="menu-links">
+      <a href="index.html">Voltar para a Home</a>
+    </nav>
+  </header>
+
+  <!-- FORMULÁRIO DE LOGIN -->
+  <div class="container-formulario">
+    <div class="card-formulario">
+      <h2>Acesse sua conta</h2>
+      <p class="subtitulo">Não tem uma conta? <a href="cadastro.html">Cadastre-se</a></p>
+      
+      <form onsubmit="executarLogin(event)">
+        <div class="grupo-input">
+          <label for="email">E-mail</label>
+          <input type="email" id="email" placeholder="seu@email.com" required />
+        </div>
+        
+        <div class="grupo-input">
+          <label for="senha">Senha</label>
+          <input type="password" id="senha" placeholder="••••••••" required />
+        </div>
+
+        <p id="erro-login" style="color:#e63946; font-size:14px; display:none;"></p>
+        
+        <div class="esqueceu-senha">
+          <a href="#" onclick="alert('Funcionalidade de recuperação em desenvolvimento.')">Esqueceu sua senha?</a>
+        </div>
+        
+        <button type="submit" class="btn-enviar" id="btn-entrar">Entrar</button>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    async function executarLogin(e) {
+      e.preventDefault();
+      const email = document.getElementById('email').value;
+      const senha = document.getElementById('senha').value;
+      const btn = document.getElementById('btn-entrar');
+      const erroEl = document.getElementById('erro-login');
+      erroEl.style.display = 'none';
+      btn.disabled = true;
+      btn.innerText = 'Entrando...';
+
+      try {
+        const resp = await fetch(`${API_URL}/auth/login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, senha })
+        });
+        const dados = await resp.json();
+        if (!resp.ok) throw new Error(dados.erro || 'Não foi possível entrar.');
+
+        AuthStorage.salvarSessao(dados.usuario, dados.token);
+        window.location.href = dados.usuario.papel === 'FOTOGRAFO' ? 'painel-fotografo.html' : 'index.html';
+      } catch (err) {
+        erroEl.innerText = err.message;
+        erroEl.style.display = 'block';
+        btn.disabled = false;
+        btn.innerText = 'Entrar';
+      }
+    }
+  </script>
+
+</body>
+</html>

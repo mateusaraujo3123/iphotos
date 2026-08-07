@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cadastro - iphotos</title>
+  <link rel="stylesheet" href="acesso.css">
+  <style>.campos-fotografo-bloco { display: none; }</style>
+  <script src="api-config.js"></script>
+</head>
+<body>
+
+  <header class="meu-header">
+    <a href="index.html" class="logo">iphoto<span>s</span></a>
+    <nav class="menu-links"><a href="index.html">Voltar para a Home</a></nav>
+  </header>
+
+  <div class="container-formulario">
+    <div class="card-formulario">
+      <h2>Crie sua conta</h2>
+      <p class="subtitulo">Já possui cadastro? <a href="login.html">Faça login</a></p>
+      
+      <div class="seletor-perfil">
+        <div class="opcao-perfil ativo" id="aba-cliente" onclick="mudarAba('cliente')">Sou Cliente</div>
+        <div class="opcao-perfil" id="aba-fotografo" onclick="mudarAba('fotografo')">Sou Fotógrafo</div>
+      </div>
+
+      <form onsubmit="executarCadastro(event)">
+        <div class="grupo-input">
+          <label for="nome">Nome Completo</label>
+          <input type="text" id="nome" placeholder="Seu nome" required />
+        </div>
+        <div class="grupo-input">
+          <label for="email">E-mail</label>
+          <input type="email" id="email" placeholder="seu@email.com" required />
+        </div>
+
+        <!-- Campo de localização (estado/cidade) removido a pedido: irrelevante para o cadastro. -->
+        <div id="campos-extras" class="campos-fotografo-bloco">
+          <div class="grupo-input">
+            <label for="whatsapp">WhatsApp</label>
+            <input type="tel" id="whatsapp" placeholder="(00) 00000-0000" />
+          </div>
+          <div class="grupo-input">
+            <label for="chavePix">Chave Pix (para receber seus saques)</label>
+            <input type="text" id="chavePix" placeholder="CPF, e-mail ou telefone" />
+          </div>
+        </div>
+
+        <div class="grupo-input">
+          <label for="senha">Crie uma Senha</label>
+          <input type="password" id="senha" placeholder="No mínimo 6 caracteres" required minlength="6" />
+        </div>
+
+        <p id="erro-cadastro" style="color:#e63946; font-size:14px; display:none;"></p>
+
+        <button type="submit" class="btn-enviar" id="btn-criar-conta">Criar Conta</button>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    let perfilAtual = 'cliente';
+
+    function mudarAba(tipo) {
+      perfilAtual = tipo;
+      document.getElementById('aba-cliente').classList.toggle('ativo', tipo === 'cliente');
+      document.getElementById('aba-fotografo').classList.toggle('ativo', tipo === 'fotografo');
+      document.getElementById('campos-extras').style.display = tipo === 'fotografo' ? 'block' : 'none';
+    }
+
+    async function executarCadastro(e) {
+      e.preventDefault();
+      const btn = document.getElementById('btn-criar-conta');
+      const erroEl = document.getElementById('erro-cadastro');
+      erroEl.style.display = 'none';
+
+      const payload = {
+        nome: document.getElementById('nome').value,
+        email: document.getElementById('email').value,
+        senha: document.getElementById('senha').value,
+        papel: perfilAtual === 'fotografo' ? 'FOTOGRAFO' : 'CLIENTE',
+        whatsapp: document.getElementById('whatsapp').value || null,
+        chavePix: document.getElementById('chavePix').value || null,
+      };
+
+      btn.disabled = true;
+      btn.innerText = 'Criando conta...';
+
+      try {
+        const resp = await fetch(`${API_URL}/auth/cadastro`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const dados = await resp.json();
+        if (!resp.ok) throw new Error(dados.erro || 'Não foi possível criar a conta.');
+
+        AuthStorage.salvarSessao(dados.usuario, dados.token);
+        window.location.href = dados.usuario.papel === 'FOTOGRAFO' ? 'painel-fotografo.html' : 'index.html';
+      } catch (err) {
+        erroEl.innerText = err.message;
+        erroEl.style.display = 'block';
+        btn.disabled = false;
+        btn.innerText = 'Criar Conta';
+      }
+    }
+  </script>
+</body>
+</html>
