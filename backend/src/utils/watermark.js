@@ -76,16 +76,27 @@ function criarGeradorPseudoAleatorio(seedStr) {
  */
 function gerarMarcaPrincipal(largura, altura, rand) {
   const angulo = -30 + rand() * 14; // entre -30° e -16°
-  const fonte = Math.max(30, Math.floor(largura / 2));
+  
+  // Mantemos a base da fonte fixa e controlamos o tamanho real pelo multiplicador abaixo
+  const fonteBase = 50; 
+  
+  // AUMENTAR AQUI: mude de 1.8 para 2.5 ou 3.0 se quiser ainda maior!
+  const multiplicadorTamanho = 2.2; 
+  
   const cx = largura / 2 + (rand() - 0.5) * largura * 0.12;
   const cy = altura / 2 + (rand() - 0.5) * altura * 0.12;
 
   let textos = '';
+  // Criamos um grupo <g> com a escala forçada, aplicando o tamanho diretamente nos pixels do SVG
+  textos += `<g transform="translate(${cx}, ${cy}) scale(${multiplicadorTamanho}) translate(${-cx}, ${-cy})">`;
+  
   for (let i = -2; i <= 2; i++) {
-    const y = cy + i * fonte * 1.5;
-    textos += `<text x="${cx}" y="${y}" font-size="${fonte}" font-family="Arial, sans-serif" font-weight="800"
-      fill="white" fill-opacity="0.60" text-anchor="middle" transform="rotate(${angulo.toFixed(1)} ${cx} ${y})">${escaparXml(TEXTO_MARCA)}</text>`;
+    const y = cy + i * fonteBase * 1.5;
+    textos += `<text x="${cx}" y="${y}" font-size="${fonteBase}" font-family="Impact, Arial Black, Arial, sans-serif" font-weight="900"
+      fill="white" fill-opacity="0.55" text-anchor="middle" transform="rotate(${angulo.toFixed(1)} ${cx} ${y})">${escaparXml(TEXTO_MARCA)}</text>`;
   }
+  
+  textos += `</g>`;
   return textos;
 }
 
