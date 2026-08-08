@@ -3,20 +3,40 @@
  *
  * Recebe o buffer ORIGINAL enviado pelo fotógrafo e devolve uma versão
  * leve (JPEG) com uma marca d'água em MÚLTIPLAS CAMADAS, pensada
- * especificamente para dificultar remoção automatizada por IA:
+ * especificamente para dificultar remoção automatizada por IA
+ * (inpainting / object removal):
  *
- *   1) Marca principal: Seu logotipo original em PNG, centralizado e redimensionado.
+ *   1) Marca principal grande, atravessando uma faixa diagonal relevante
+ *      da foto (não fica restrita a um canto).
  *   2) Marcas secundárias menores, espalhadas em posições/rotações/
- *      escalas/opacidades ALEATÓRIAS (com seed por foto).
- *   3) Uma textura fina de linhas, aplicada com blend "overlay".
- *   4) Uma linha pequena de aviso de direitos autorais no rodapé.
+ *      escalas/opacidades ALEATÓRIAS (com seed por foto) — isso evita que
+ *      exista um "molde" único de remoção que funcione pra todas as fotos
+ *      do mesmo evento/fotógrafo.
+ *   3) Uma textura fina de linhas, aplicada com blend "overlay" (não
+ *      transparência simples) — isso faz a marca interagir com o
+ *      contraste/luminância dos próprios pixels da foto, em vez de ser
+ *      uma camada uniforme "colada em cima" (que é o tipo de camada mais
+ *      fácil de isolar e apagar automaticamente).
+ *   4) Uma linha pequena de aviso de direitos autorais no rodapé —
+ *      apenas INFORMATIVA, não é proteção técnica.
+ *
+ * IMPORTANTE (limitações — ver README/CHANGELOG): isto NÃO é uma
+ * "perturbação adversarial" no sentido acadêmico (esse tipo de técnica
+ * exige treinar um ataque contra um modelo de IA específico, com GPU e
+ * Python/PyTorch, e nem essas técnicas de pesquisa são garantidas contra
+ * modelos novos). O que existe aqui são práticas de robustez de marca
+ * d'água (multi-camada, aleatória, com interação de pixel) que aumentam
+ * o esforço/qualidade perdida numa remoção automatizada, mas não
+ * garantem 100% de proteção contra ferramentas avançadas de inpainting.
+ *
+ * O arquivo original NUNCA é alterado — ele é gravado intacto no bucket
+ * privado por fora desta função (ver storage.salvarOriginalPrivado).
  */
 const sharp = require('sharp');
 const crypto = require('crypto');
-const path = require('path');
 
 const LARGURA_MAX = parseInt(process.env.WATERMARK_MAX_WIDTH || '1000', 10);
-const QUALIDADE = parseInt(process.env.WATERMARK_QUALITY || '68', 10);
+const QUALIDADE = parseInt(process.env.WATERMARK_QUALITY || '10', 10);
 const TEXTO_MARCA = process.env.WATERMARK_TEXT || 'iphotos';
 const TEXTO_DIREITOS =
   process.env.WATERMARK_COPYRIGHT_TEXT ||
@@ -31,6 +51,9 @@ function escaparXml(texto) {
 
 /**
  * PRNG determinístico simples (mulberry32) a partir de uma seed textual.
+ * A mesma foto (mesmo seed) sempre gera o mesmo padrão — mas cada foto
+ * diferente tem posições/rotações diferentes, evitando um template único
+ * de remoção em lote para todo o evento.
  */
 function criarGeradorPseudoAleatorio(seedStr) {
   let h = 0;
@@ -48,10 +71,31 @@ function criarGeradorPseudoAleatorio(seedStr) {
 }
 
 /**
- * CAMADA 2 — marcas secundárias de texto espalhadas de forma randômica.
+ * CAMADA 1 — marca principal: grande, atravessando uma faixa diagonal
+ * relevante da imagem (não fica restrita a uma região pequena).
+ */
+function gerarMarcaPrincipal(largura, altura, rand) {
+  const angulo = -30 + rand() * 14; // entre -30° e -16°
+  const fonte = Math.max(30, Math.floor(largura / 2));
+  const cx = largura / 2 + (rand() - 0.5) * largura * 0.12;
+  const cy = altura / 2 + (rand() - 0.5) * altura * 0.12;
+
+  let textos = '';
+  for (let i = -2; i <= 2; i++) {
+    const y = cy + i * fonte * 1.5;
+    textos += `<text x="${cx}" y="${y}" font-size="${fonte}" font-family="Arial, sans-serif" font-weight="800"
+      fill="white" fill-opacity="0.60" text-anchor="middle" transform="rotate(${angulo.toFixed(1)} ${cx} ${y})">${escaparXml(TEXTO_MARCA)}</text>`;
+  }
+  return textos;
+}
+
+/**
+ * CAMADA 2 — marcas secundárias: várias, menores, espalhadas por outras
+ * regiões da foto, cada uma com posição/rotação/escala/opacidade próprias
+ * (não é um grid previsível).
  */
 function gerarMarcasSecundarias(largura, altura, rand) {
-  const QUANTIDADE = 38;
+  const QUANTIDADE =38;
   let textos = '';
   for (let i = 0; i < QUANTIDADE; i++) {
     const x = rand() * largura;
@@ -66,7 +110,10 @@ function gerarMarcasSecundarias(largura, altura, rand) {
 }
 
 /**
- * CAMADA 3 — textura de linhas finas com blend "overlay".
+ * CAMADA 3 — textura de linhas finas em baixíssima opacidade, aplicada
+ * depois com blend "overlay" (interage com o contraste/luminância dos
+ * pixels da própria foto, em vez de ser só uma camada transparente por
+ * cima — dificulta separar "camada da marca" de "camada da foto").
  */
 function gerarTexturaInterativa(largura, altura, rand) {
   const espacamento = Math.max(10, Math.floor(largura / 70));
@@ -75,13 +122,13 @@ function gerarTexturaInterativa(largura, altura, rand) {
   for (let x = -altura; x < largura + altura; x += espacamento) {
     linhas += `<line x1="${x}" y1="0" x2="${x + altura}" y2="${altura}" stroke="white" stroke-opacity="0.09" stroke-width="1"/>`;
   }
-  return `<svg width="${largura}" height="${altura}" xmlns="http://w3.org">
+  return `<svg width="${largura}" height="${altura}" xmlns="http://www.w3.org/2000/svg">
     <g transform="rotate(${anguloBase.toFixed(1)} ${largura / 2} ${altura / 2})">${linhas}</g>
   </svg>`;
 }
 
 /**
- * Linha pequena de aviso de direitos autorais no rodapé.
+ * Linha pequena de aviso de direitos autorais — só informativa.
  */
 function gerarRodapeDireitos(largura, altura) {
   const fonte = Math.max(10, Math.floor(largura / 95));
@@ -90,10 +137,13 @@ function gerarRodapeDireitos(largura, altura) {
 }
 
 /**
- * Função principal exportada pela esteira de processamento de imagens.
+ * @param {Buffer} bufferOriginal - buffer bruto do arquivo enviado
+ * @param {string} [seed] - identificador único da foto (ex: o id gerado
+ *   pra ela); garante que cada foto tenha um padrão de marca diferente.
+ * @returns {Promise<Buffer>} buffer JPEG comprimido e com marca d'água
  */
 async function comprimirEAplicarMarcaDagua(bufferOriginal, seed) {
-  const imagem = sharp(bufferOriginal).rotate(); // Auto-orienta via EXIF
+  const imagem = sharp(bufferOriginal).rotate(); // .rotate() sem args = auto-orienta via EXIF
   const metadata = await imagem.metadata();
 
   const larguraFinal = Math.min(metadata.width || LARGURA_MAX, LARGURA_MAX);
@@ -107,30 +157,18 @@ async function comprimirEAplicarMarcaDagua(bufferOriginal, seed) {
   const rand = criarGeradorPseudoAleatorio(seed || crypto.randomUUID());
   const { width: w, height: h } = info;
 
-  // 1. Gerar os SVGs de texto e texturas de forma isolada
-  const svgTextos = `<svg width="${w}" height="${h}" xmlns="http://w3.org">
+  const svgTextos = `<svg width="${w}" height="${h}" xmlns="http://www.w3.org/2000/svg">
     ${gerarMarcasSecundarias(w, h, rand)}
+    ${gerarMarcaPrincipal(w, h, rand)}
     ${gerarRodapeDireitos(w, h)}
   </svg>`;
 
   const svgTextura = gerarTexturaInterativa(w, h, rand);
 
-  // 2. Resolve o caminho absoluto a partir do diretório raiz de execução do processo do contêiner
-  const caminhoPng = path.join(process.cwd(), 'src', 'utils', 'marca-agua.png');
-  
-  // TAMANHO DA MARCA: O logo vai ocupar 75% da largura da foto
-  const larguraMarca = Math.floor(w * 0.75); 
-
-  const marcaRedimensionada = await sharp(caminhoPng)
-    .resize({ width: larguraMarca })
-    .toBuffer();
-
-  // 3. Composição final unificada aplicando o PNG por cima dos vetores
   const resultado = await sharp(bufferBase)
     .composite([
-      { input: Buffer.from(svgTextura), blend: 'overlay' },
-      { input: Buffer.from(svgTextos), blend: 'over' },
-      { input: marcaRedimensionada, gravity: 'center', blend: 'over' }
+      { input: Buffer.from(svgTextura), blend: 'overlay' }, // camada 3: interage com os pixels
+      { input: Buffer.from(svgTextos), blend: 'over' },     // camadas 1, 2 e rodapé: precisam ficar legíveis
     ])
     .jpeg({ quality: QUALIDADE, mozjpeg: true })
     .toBuffer();
