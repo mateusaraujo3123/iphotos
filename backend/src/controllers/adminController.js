@@ -1,7 +1,7 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const prisma = require('../config/db');
-const { excluirObjetos } = require('../config/storage');
+const { excluirObjetos, PROVEDORES_DISPONIVEIS } = require('../config/storage');
 
 /**
  * POST /api/admin/login
@@ -95,14 +95,14 @@ async function listarFotografos(req, res) {
 
 /**
  * PUT /api/admin/fotografos/:id/provedor-nuvem
- * body: { provedorNuvem: 'S3' | 'R2' }
+ * body: { provedorNuvem: 'R2' | 'S3' | 'BACKBLAZE' | 'WASABI' | 'DIGITALOCEAN' | 'IDRIVE' | 'VULTR' | 'LINODE' | 'SCALEWAY' | 'SUPABASE' }
  * Roteamento multi-cloud: define em qual bucket este fotógrafo específico
  * salvará os PRÓXIMOS lotes de fotos enviados.
  */
 async function definirProvedorNuvem(req, res) {
   const { provedorNuvem } = req.body;
-  if (!['S3', 'R2'].includes(provedorNuvem)) {
-    return res.status(400).json({ erro: 'Provedor inválido. Use "S3" ou "R2".' });
+  if (!PROVEDORES_DISPONIVEIS.includes(provedorNuvem)) {
+    return res.status(400).json({ erro: `Provedor inválido. Use um de: ${PROVEDORES_DISPONIVEIS.join(', ')}` });
   }
   const fotografo = await prisma.usuario.update({
     where: { id: req.params.id },

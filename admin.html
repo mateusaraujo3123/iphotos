@@ -198,6 +198,14 @@
               <select class="select-nuvem-individual" onchange="alterarNuvemIndividualFotografo('${f.id}', this.value)">
                 <option value="R2" ${f.provedorNuvem === 'R2' ? 'selected' : ''}>Cloudflare R2</option>
                 <option value="S3" ${f.provedorNuvem === 'S3' ? 'selected' : ''}>Amazon S3</option>
+                <option value="BACKBLAZE" ${f.provedorNuvem === 'BACKBLAZE' ? 'selected' : ''}>Backblaze B2</option>
+                <option value="WASABI" ${f.provedorNuvem === 'WASABI' ? 'selected' : ''}>Wasabi</option>
+                <option value="DIGITALOCEAN" ${f.provedorNuvem === 'DIGITALOCEAN' ? 'selected' : ''}>DigitalOcean Spaces</option>
+                <option value="IDRIVE" ${f.provedorNuvem === 'IDRIVE' ? 'selected' : ''}>IDrive e2</option>
+                <option value="VULTR" ${f.provedorNuvem === 'VULTR' ? 'selected' : ''}>Vultr Object Storage</option>
+                <option value="LINODE" ${f.provedorNuvem === 'LINODE' ? 'selected' : ''}>Linode/Akamai</option>
+                <option value="SCALEWAY" ${f.provedorNuvem === 'SCALEWAY' ? 'selected' : ''}>Scaleway</option>
+                <option value="SUPABASE" ${f.provedorNuvem === 'SUPABASE' ? 'selected' : ''}>Supabase Storage</option>
               </select>
             </td>
             <td>

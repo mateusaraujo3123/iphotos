@@ -18,8 +18,16 @@ enum PapelUsuario {
 }
 
 enum ProvedorNuvem {
-  S3
-  R2
+  R2          // Cloudflare R2
+  S3          // Amazon S3
+  BACKBLAZE   // Backblaze B2
+  WASABI      // Wasabi
+  DIGITALOCEAN // DigitalOcean Spaces
+  IDRIVE      // IDrive e2
+  VULTR       // Vultr Object Storage
+  LINODE      // Akamai/Linode Object Storage
+  SCALEWAY    // Scaleway Object Storage
+  SUPABASE    // Supabase Storage (endpoint S3-compatible)
 }
 
 enum StatusPedido {
