@@ -5,7 +5,7 @@
  * leve (JPEG) com uma marca d'água em MÚLTIPLAS CAMADAS, pensada
  * especificamente para dificultar remoção automatizada por IA:
  *
- *   1) Marca principal: Logotipo PNG personalizado do usuário centralizado e dinâmico.
+ *   1) Marca principal: Seu arquivo SVG personalizado centralizado e dinâmico.
  *   2) Marcas secundárias menores, espalhadas em posições/rotações/
  *      escalas/opacidades ALEATÓRIAS (com seed por foto).
  *   3) Uma textura fina de linhas, aplicada com blend "overlay".
@@ -14,6 +14,7 @@
 const sharp = require('sharp');
 const crypto = require('crypto');
 const path = require('path');
+const fs = require('fs');
 
 const LARGURA_MAX = parseInt(process.env.WATERMARK_MAX_WIDTH || '1000', 10);
 const QUALIDADE = parseInt(process.env.WATERMARK_QUALITY || '68', 10);
@@ -48,26 +49,30 @@ function criarGeradorPseudoAleatorio(seedStr) {
 }
 
 /**
- * CAMADA 1 — marca principal utilizando o seu arquivo PNG personalizado.
+ * CAMADA 1 — Carrega o seu arquivo SVG personalizado e ajusta a escala dele para o centro da foto.
  */
-async function gerarMarcaPrincipalPng(larguraFoto) {
-  // Localiza o arquivo na mesma pasta deste script
-  const caminhoPng = path.join(__dirname, 'marca-dagua.png');
+function obterMarcaPrincipalSvg(larguraFoto, alturaFoto) {
+  const caminhoSvg = path.join(__dirname, 'marca-dagua.svg');
+  
+  // Lemos o conteúdo do seu arquivo SVG como texto
+  let conteudoSvg = fs.readFileSync(caminhoSvg, 'utf-8');
 
-  // O logo vai ocupar 75% da largura total da foto.
-  // Mude para 0.85 se quiser maior, ou 0.60 se quiser menor.
+  // Remove tags de abertura/fechamento do SVG original se existirem, para embutir no nosso container
+  conteudoSvg = conteudoSvg
+    .replace(/<svg[^>]*>/, '')
+    .replace(/<\/svg>/, '');
+
+  // DEFINA O TAMANHO DA SUA MARCA: 0.75 significa que ela ocupará 75% da largura da foto
   const larguraMarca = Math.floor(larguraFoto * 0.75);
+  
+  // Centralização matemática simples do elemento gráfico
+  const cx = larguraFoto / 2;
+  const cy = alturaFoto / 2;
 
-  // Processa o PNG apenas redimensionando
-  const marcaRedimensionada = await sharp(caminhoPng)
-    .resize({ width: larguraMarca })
-    .toBuffer();
-
-  return {
-    input: marcaRedimensionada,
-    gravity: 'center', // Mantém o logotipo perfeitamente no centro da foto
-    blend: 'over'      // Combina a imagem respeitando a transparência original do PNG
-  };
+  // Embutimos o seu SVG dentro de uma tag <g> (grupo) aplicando opacidade e escala controladas
+  return `<g fill="white" opacity="0.45" transform="translate(${cx}, ${cy}) scale(${larguraMarca / 500}) translate(-250, -250)">
+    ${conteudoSvg}
+  </g>`;
 }
 
 /**
@@ -130,23 +135,20 @@ async function comprimirEAplicarMarcaDagua(bufferOriginal, seed) {
   const rand = criarGeradorPseudoAleatorio(seed || crypto.randomUUID());
   const { width: w, height: h } = info;
 
-  // Renderiza os textos secundários e o rodapé informático em SVG
+  // Junta o seu SVG com as marcas secundárias e o rodapé num único arquivo de texto SVG
   const svgTextos = `<svg width="${w}" height="${h}" xmlns="http://w3.org">
     ${gerarMarcasSecundarias(w, h, rand)}
+    ${obterMarcaPrincipalSvg(w, h)}
     ${gerarRodapeDireitos(w, h)}
   </svg>`;
 
   const svgTextura = gerarTexturaInterativa(w, h, rand);
-  
-  // Carrega e calcula as dimensões da camada do seu logotipo PNG personalizado
-  const camadaMarcaPng = await gerarMarcaPrincipalPng(w);
 
-  // Composição final mesclando todas as camadas de proteção criadas
+  // Processa tudo em um único bloco de composição rápido e nativo
   const resultado = await sharp(bufferBase)
     .composite([
-      { input: Buffer.from(svgTextura), blend: 'overlay' }, // Camada de textura interativa nos pixels
-      { input: Buffer.from(svgTextos), blend: 'over' },     // Camada de textos secundários do padrão anterior
-      camadaMarcaPng                                        // Camada centralizada do seu logotipo PNG corrigida
+      { input: Buffer.from(svgTextura), blend: 'overlay' }, // Camada de textura nos pixels
+      { input: Buffer.from(svgTextos), blend: 'over' }      // Camada unificada de todos os vetores/textos
     ])
     .jpeg({ quality: QUALIDADE, mozjpeg: true })
     .toBuffer();
