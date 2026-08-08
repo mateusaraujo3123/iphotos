@@ -12,7 +12,10 @@
 
   <!-- HEADER -->
   <header class="meu-header">
-    <a href="index.html" class="logo">iphoto<span>s</span></a>
+    <a href="index.html" class="logo">
+      <img src="assets/logo.png" alt="iphotos" class="logo-imagem" onerror="this.style.display='none'" onload="this.style.display='inline-block'; var t=document.getElementById('logo-texto'); if(t) t.style.display='none';">
+      <span id="logo-texto">iphoto<span>s</span></span>
+    </a>
     <nav class="menu-links">
       <a href="index.html">Voltar para a Vitrine</a>
       <a href="carrinho.html">🛒 Carrinho (<span id="contador-carrinho">0</span>)</a>
@@ -82,8 +85,10 @@
 
       grid.innerHTML = lista.map(foto => `
         <div class="card-foto">
-          <div class="wrapper-imagem">
-            <img src="${foto.urlPublica}" alt="Foto do evento" style="width:100%; height:100%; object-fit:cover;">
+          <div class="wrapper-imagem" oncontextmenu="return false" style="user-select:none; -webkit-user-select:none;">
+            <img src="${foto.urlPublica}" alt="Foto do evento" draggable="false" oncontextmenu="return false"
+              style="width:100%; height:100%; object-fit:cover; pointer-events:none; -webkit-user-drag:none;">
+            <div class="protecao-clique" oncontextmenu="return false" style="position:absolute; inset:0;"></div>
             <div class="marca-dagua">iphotos</div>
           </div>
           <div class="info-foto">

@@ -11,7 +11,10 @@
 
   <!-- HEADER -->
   <header class="meu-header">
-    <a href="index.html" class="logo">iphoto<span>s</span></a>
+    <a href="index.html" class="logo">
+      <img src="assets/logo.png" alt="iphotos" class="logo-imagem" onerror="this.style.display='none'" onload="this.style.display='inline-block'; var t=document.getElementById('logo-texto'); if(t) t.style.display='none';">
+      <span id="logo-texto">iphoto<span>s</span></span>
+    </a>
     <nav class="menu-links">
       <!-- Nome capturado dinamicamente do login -->
       <span style="font-size: 14px; color: var(--cor-primaria); font-weight: bold; margin-right: 10px;">
@@ -85,6 +88,15 @@
         </form>
       </div>
 
+      <!-- CARD DE ARMAZENAMENTO -->
+      <div class="card-painel">
+        <h2>Armazenamento</h2>
+        <div id="bloco-armazenamento" style="font-size:13px; color:#64748b;">Carregando...</div>
+        <div style="background:#e2e8f0; border-radius:8px; height:10px; margin-top:8px; overflow:hidden;">
+          <div id="barra-armazenamento" style="background:var(--cor-primaria); height:100%; width:0%; transition:width .3s;"></div>
+        </div>
+      </div>
+
       <!-- CARD GERENCIADOR DE SAQUE PIX -->
       <div class="card-painel">
         <h2>Solicitação de Saque</h2>
@@ -141,6 +153,51 @@
       </div>
     </div>
 
+  </div>
+
+  <!-- MODAL: GERENCIAR EVENTO (editar dados, adicionar/remover fotos) -->
+  <div id="modal-gerenciar-evento" style="display:none; position:fixed; inset:0; background:rgba(15,23,42,0.55); z-index:999; align-items:center; justify-content:center; padding:20px;">
+    <div style="background:#fff; border-radius:12px; max-width:640px; width:100%; max-height:88vh; overflow-y:auto; padding:24px; position:relative;">
+      <button type="button" onclick="fecharModalEvento()" style="position:absolute; top:14px; right:14px; background:none; border:none; font-size:20px; cursor:pointer; color:#64748b;">✕</button>
+      <h2 style="margin-bottom:16px;">Gerenciar Evento</h2>
+
+      <form onsubmit="salvarEdicaoEvento(event)">
+        <div class="grupo-input">
+          <label for="edit-titulo">Nome do Evento</label>
+          <input type="text" id="edit-titulo" required />
+        </div>
+        <div class="grupo-input">
+          <label for="edit-categoria">Modalidade</label>
+          <select id="edit-categoria">
+            <option value="vaquejada">🐎 Vaquejada</option>
+            <option value="ciclismo">🚴 Ciclismo</option>
+            <option value="corrida">🏃 Corrida</option>
+            <option value="futebol">⚽ Futebol</option>
+          </select>
+        </div>
+        <div class="grupo-input">
+          <label for="edit-local">Local</label>
+          <input type="text" id="edit-local" required />
+        </div>
+        <div class="grupo-input">
+          <label for="edit-preco">Preço por Foto (R$) — vale só pras próximas fotos enviadas</label>
+          <input type="number" id="edit-preco" step="0.01" required />
+        </div>
+        <button type="submit" class="btn-acao" id="btn-salvar-edicao-evento">Salvar Alterações</button>
+      </form>
+
+      <hr style="margin:20px 0; border:none; border-top:1px solid #e2e8f0;">
+
+      <h3 style="font-size:15px; margin-bottom:10px;">Adicionar mais fotos a este evento</h3>
+      <input type="file" id="edit-file-input" accept="image/*" multiple style="margin-bottom:8px;" />
+      <button type="button" class="btn-acao" onclick="enviarMaisFotos()" style="background-color:#111827;">Enviar Fotos</button>
+      <p id="edit-status-upload" style="font-size:13px; color:#64748b; margin-top:8px;"></p>
+
+      <hr style="margin:20px 0; border:none; border-top:1px solid #e2e8f0;">
+
+      <h3 style="font-size:15px; margin-bottom:10px;">Fotos deste evento (<span id="edit-total-fotos">0</span>)</h3>
+      <div id="grid-fotos-editar" style="display:grid; grid-template-columns:repeat(auto-fill,minmax(90px,1fr)); gap:8px;"></div>
+    </div>
   </div>
 
   <script>
@@ -242,7 +299,10 @@
                 <p style="font-size:12px; color:#64748b; margin-top:2px;">Preço: R$ ${Number(ev.precoPorFoto).toFixed(2)} • ${ev._count?.fotos || 0} fotos enviadas</p>
               </div>
             </div>
-            <span class="status-badge">No Ar</span>
+            <div style="display:flex; align-items:center; gap:10px;">
+              <span class="status-badge">No Ar</span>
+              <button type="button" class="btn-escolher-capa" onclick="abrirModalEvento('${ev.id}')" style="padding:6px 12px; font-size:12px;">Gerenciar</button>
+            </div>
           </div>
         `).join('');
       } catch (err) {
@@ -298,10 +358,134 @@
       }
     }
 
+    async function carregarArmazenamento() {
+      const bloco = document.getElementById('bloco-armazenamento');
+      const barra = document.getElementById('barra-armazenamento');
+      try {
+        const dados = await apiFetch('/fotografo/armazenamento');
+        bloco.innerHTML = `<strong>${dados.limiteGB} GB</strong> total &nbsp;•&nbsp; <strong>${dados.usadoGB} GB</strong> utilizado &nbsp;•&nbsp; <strong>${dados.disponivelGB} GB</strong> disponível`;
+        barra.style.width = `${dados.percentualUsado}%`;
+        barra.style.background = dados.percentualUsado >= 90 ? '#e63946' : dados.percentualUsado >= 70 ? '#f59e0b' : 'var(--cor-primaria)';
+      } catch (err) {
+        bloco.innerText = 'Não foi possível carregar o armazenamento.';
+      }
+    }
+
+    // ---------------- MODAL: GERENCIAR EVENTO ----------------
+    let eventoEmEdicaoId = null;
+
+    async function abrirModalEvento(id) {
+      eventoEmEdicaoId = id;
+      try {
+        const evento = await apiFetch(`/fotografo/eventos/${id}`);
+        document.getElementById('edit-titulo').value = evento.titulo;
+        document.getElementById('edit-categoria').value = evento.categoria;
+        document.getElementById('edit-local').value = evento.local;
+        document.getElementById('edit-preco').value = evento.precoPorFoto;
+        renderizarGridFotosEditar(evento.fotos || []);
+        document.getElementById('modal-gerenciar-evento').style.display = 'flex';
+      } catch (err) {
+        alert(err.message);
+      }
+    }
+
+    function fecharModalEvento() {
+      eventoEmEdicaoId = null;
+      document.getElementById('modal-gerenciar-evento').style.display = 'none';
+      document.getElementById('edit-file-input').value = '';
+    }
+
+    function renderizarGridFotosEditar(fotos) {
+      document.getElementById('edit-total-fotos').innerText = fotos.length;
+      const grid = document.getElementById('grid-fotos-editar');
+      if (!fotos.length) {
+        grid.innerHTML = '<p style="font-size:13px; color:#64748b;">Nenhuma foto neste evento ainda.</p>';
+        return;
+      }
+      grid.innerHTML = fotos.map(f => `
+        <div style="position:relative;">
+          <img src="${f.urlPublica}" style="width:100%; height:90px; object-fit:cover; border-radius:6px;" alt="Foto">
+          <button type="button" onclick="removerFotoDoEvento('${f.id}')" title="Remover foto"
+            style="position:absolute; top:4px; right:4px; background:rgba(220,38,38,0.9); color:#fff; border:none; border-radius:6px; width:22px; height:22px; cursor:pointer; font-size:12px;">🗑</button>
+        </div>
+      `).join('');
+    }
+
+    async function salvarEdicaoEvento(e) {
+      e.preventDefault();
+      const btn = document.getElementById('btn-salvar-edicao-evento');
+      btn.disabled = true;
+      btn.innerText = 'Salvando...';
+      try {
+        await apiFetch(`/fotografo/eventos/${eventoEmEdicaoId}`, {
+          method: 'PUT',
+          body: JSON.stringify({
+            titulo: document.getElementById('edit-titulo').value,
+            categoria: document.getElementById('edit-categoria').value,
+            local: document.getElementById('edit-local').value,
+            precoPorFoto: parseFloat(document.getElementById('edit-preco').value),
+          })
+        });
+        carregarMeusEventos();
+        alert('Evento atualizado!');
+      } catch (err) {
+        alert(err.message);
+      } finally {
+        btn.disabled = false;
+        btn.innerText = 'Salvar Alterações';
+      }
+    }
+
+    async function enviarMaisFotos() {
+      const arquivos = document.getElementById('edit-file-input').files;
+      if (!arquivos.length) { alert('Selecione ao menos uma foto.'); return; }
+
+      const statusEl = document.getElementById('edit-status-upload');
+      statusEl.innerText = `Enviando e processando ${arquivos.length} foto(s)...`;
+
+      const form = new FormData();
+      [...arquivos].forEach(f => form.append('fotos', f));
+
+      try {
+        const tokenAtual = AuthStorage.getToken();
+        const resp = await fetch(`${API_URL}/fotografo/eventos/${eventoEmEdicaoId}/fotos`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${tokenAtual}` },
+          body: form
+        });
+        const resultado = await resp.json();
+        if (!resp.ok) throw new Error(resultado.erro || 'Falha ao enviar fotos.');
+
+        statusEl.innerText = resultado.mensagem;
+        document.getElementById('edit-file-input').value = '';
+        const eventoAtualizado = await apiFetch(`/fotografo/eventos/${eventoEmEdicaoId}`);
+        renderizarGridFotosEditar(eventoAtualizado.fotos || []);
+        carregarMeusEventos();
+        carregarArmazenamento();
+      } catch (err) {
+        statusEl.innerText = '';
+        alert(err.message);
+      }
+    }
+
+    async function removerFotoDoEvento(fotoId) {
+      if (!confirm('Remover esta foto permanentemente?')) return;
+      try {
+        await apiFetch(`/fotografo/fotos/${fotoId}`, { method: 'DELETE' });
+        const eventoAtualizado = await apiFetch(`/fotografo/eventos/${eventoEmEdicaoId}`);
+        renderizarGridFotosEditar(eventoAtualizado.fotos || []);
+        carregarMeusEventos();
+        carregarArmazenamento();
+      } catch (err) {
+        alert(err.message);
+      }
+    }
+
     window.onload = () => {
       document.getElementById('nome-dinamico-painel-fotografo').innerText = AuthStorage.getNome() || 'Fotógrafo Parceiro';
       carregarFaturamento();
       carregarMeusEventos();
+      carregarArmazenamento();
     };
   </script>
 </body>

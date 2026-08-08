@@ -8,11 +8,13 @@ router.post('/login', ctrl.loginAdmin);
 router.use(exigirAdmin);
 
 router.get('/eventos', ctrl.listarTodosEventos);
+router.put('/eventos/:id/categoria', ctrl.realocarCategoriaEvento);
 router.delete('/eventos/:id', ctrl.deletarEvento);
 
 router.get('/fotografos', ctrl.listarFotografos);
 router.put('/fotografos/:id/provedor-nuvem', ctrl.definirProvedorNuvem);
 router.put('/fotografos/:id/taxa', ctrl.definirTaxaComissao);
+router.put('/fotografos/:id/limite-armazenamento', ctrl.definirLimiteArmazenamento);
 
 router.get('/usuarios', ctrl.listarUsuarios);
 router.put('/usuarios/:id/resetar-senha', ctrl.resetarSenha);

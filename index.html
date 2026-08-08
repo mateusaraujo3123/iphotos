@@ -19,7 +19,10 @@
 
   <!-- HEADER MODIFICADO -->
   <header class="meu-header" id="header-dinamico">
-    <a href="index.html" class="logo">iphoto<span id="logo-dot">s</span></a>
+    <a href="index.html" class="logo">
+      <img src="assets/logo.png" alt="iphotos" class="logo-imagem" onerror="this.style.display='none'" onload="this.style.display='inline-block'; var t=document.getElementById('logo-texto'); if(t) t.style.display='none';">
+      <span id="logo-texto">iphoto<span id="logo-dot">s</span></span>
+    </a>
     <nav class="menu-links">
       <a href="minhas-compras.html">Minhas compras</a>
       <a href="cadastro.html">Sou Fotógrafo</a>

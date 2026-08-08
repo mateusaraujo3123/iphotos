@@ -31,7 +31,10 @@
 <body>
 
   <header class="meu-header">
-    <a href="index.html" class="logo">iphoto<span>s</span></a>
+    <a href="index.html" class="logo">
+      <img src="assets/logo.png" alt="iphotos" class="logo-imagem" onerror="this.style.display='none'" onload="this.style.display='inline-block'; var t=document.getElementById('logo-texto'); if(t) t.style.display='none';">
+      <span id="logo-texto">iphoto<span>s</span></span>
+    </a>
     <nav class="menu-links">
       <span>Painel Master Admin ⚙️</span>
       <a href="#" id="link-sair-admin" onclick="sairDoAdmin()" style="display:none;">Sair</a>
@@ -99,7 +102,7 @@
         <div class="card-admin">
           <h2>Moderação de Coberturas (Exclusão do Banco)</h2>
           <table class="lista-admin">
-            <thead><tr><th>Evento</th><th>Data</th><th>Fotógrafo</th><th>Ação Crítica</th></tr></thead>
+            <thead><tr><th>Evento</th><th>Categoria</th><th>Data</th><th>Fotógrafo</th><th>Ação Crítica</th></tr></thead>
             <tbody id="tabela-eventos-moderacao-admin"></tbody>
           </table>
         </div>
@@ -117,7 +120,7 @@
         <div class="card-admin">
           <h2>Gerenciamento de Fotógrafos Ativos</h2>
           <table class="lista-admin">
-            <thead><tr><th>Fotógrafo</th><th>Servidor de Fotos (Nuvem)</th><th>Taxa (%)</th><th>Ações de Controle</th></tr></thead>
+            <thead><tr><th>Fotógrafo</th><th>Servidor de Fotos (Nuvem)</th><th>Taxa (%)</th><th>Armazenamento</th><th>Ações de Controle</th></tr></thead>
             <tbody id="tabela-fotografos-admin"></tbody>
           </table>
         </div>
@@ -212,14 +215,19 @@
               <input type="number" class="input-taxa-individual" value="${f.taxaComissao}" step="0.5" min="0" max="100"
                 onchange="alterarTaxaFotografo('${f.id}', this.value)" />
             </td>
+            <td style="min-width:130px;">
+              <div style="font-size:11px; color:#64748b; margin-bottom:4px;">${(f.armazenamentoUsadoMB / 1024).toFixed(2)} / <span id="limite-gb-${f.id}">${(f.limiteArmazenamentoMB / 1024).toFixed(1)}</span> GB</div>
+              <input type="number" class="input-taxa-individual" style="width:70px;" value="${(f.limiteArmazenamentoMB / 1024).toFixed(1)}" step="0.5" min="0.5"
+                onchange="alterarLimiteArmazenamento('${f.id}', this.value)" title="Limite em GB" />
+            </td>
             <td>
               <button class="btn-alterar-senha-admin" onclick="alterarSenhaUsuarioBanco('${f.id}', '${f.nome}')">Senha</button>
               <button class="btn-remover-usuario-admin" onclick="removerUsuarioPermanenteBanco('${f.id}', '${f.nome}')">Remover</button>
             </td>
           </tr>
-        `).join('') || '<tr><td colspan="4" style="text-align:center;color:#64748b;padding:15px;">Nenhum fotógrafo cadastrado.</td></tr>';
+        `).join('') || '<tr><td colspan="5" style="text-align:center;color:#64748b;padding:15px;">Nenhum fotógrafo cadastrado.</td></tr>';
       } catch (err) {
-        tabelaFotografos.innerHTML = `<tr><td colspan="4" style="color:#e63946;">${err.message}</td></tr>`;
+        tabelaFotografos.innerHTML = `<tr><td colspan="5" style="color:#e63946;">${err.message}</td></tr>`;
       }
 
       try {
@@ -263,6 +271,19 @@
       }
     }
 
+    async function alterarLimiteArmazenamento(id, novoValorGB) {
+      try {
+        const limiteArmazenamentoMB = Math.round(parseFloat(novoValorGB) * 1024);
+        await apiFetchAdmin(`/admin/fotografos/${id}/limite-armazenamento`, {
+          method: 'PUT',
+          body: JSON.stringify({ limiteArmazenamentoMB })
+        });
+        document.getElementById(`limite-gb-${id}`).innerText = parseFloat(novoValorGB).toFixed(1);
+      } catch (err) {
+        alert(err.message);
+      }
+    }
+
     async function alterarSenhaUsuarioBanco(id, nome) {
       const novaSenha = prompt(`Nova senha para ${nome}:`);
       if (!novaSenha) return;
@@ -293,18 +314,36 @@
     // ------------------------------------------------------------
     async function carregarEventosParaModeracao() {
       const container = document.getElementById('tabela-eventos-moderacao-admin');
+      const CATEGORIAS = { vaquejada: '🐎 Vaquejada', ciclismo: '🚴 Ciclismo', corrida: '🏃 Corrida', futebol: '⚽ Futebol' };
       try {
         const eventos = await apiFetchAdmin('/admin/eventos');
         container.innerHTML = eventos.map(ev => `
           <tr id="linha-evento-admin-${ev.id}">
             <td><strong>${ev.titulo}</strong></td>
+            <td>
+              <select class="select-nuvem-individual" onchange="realocarCategoriaEvento('${ev.id}', this.value)">
+                ${Object.entries(CATEGORIAS).map(([valor, rotulo]) => `<option value="${valor}" ${ev.categoria === valor ? 'selected' : ''}>${rotulo}</option>`).join('')}
+              </select>
+            </td>
             <td><span style="font-weight:600;color:#475569;">${new Date(ev.dataRealizacao).toLocaleDateString('pt-BR')}</span></td>
             <td><span style="font-size:13px;color:#64748b;">${ev.fotografo?.nome || '—'}</span></td>
             <td><button class="btn-deletar-evento-banco" onclick="deletarEventoPermanenteDoBanco('${ev.id}', '${ev.titulo.replace(/'/g, "\\'")}')">🗑️</button></td>
           </tr>
-        `).join('') || '<tr><td colspan="4" style="text-align:center;color:#64748b;padding:15px;">Nenhum evento cadastrado.</td></tr>';
+        `).join('') || '<tr><td colspan="5" style="text-align:center;color:#64748b;padding:15px;">Nenhum evento cadastrado.</td></tr>';
       } catch (err) {
-        container.innerHTML = `<tr><td colspan="4" style="color:#e63946;">${err.message}</td></tr>`;
+        container.innerHTML = `<tr><td colspan="5" style="color:#e63946;">${err.message}</td></tr>`;
+      }
+    }
+
+    async function realocarCategoriaEvento(id, novaCategoria) {
+      try {
+        await apiFetchAdmin(`/admin/eventos/${id}/categoria`, {
+          method: 'PUT',
+          body: JSON.stringify({ categoria: novaCategoria })
+        });
+      } catch (err) {
+        alert(err.message);
+        carregarEventosParaModeracao();
       }
     }
 

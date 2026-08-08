@@ -60,6 +60,8 @@ model Usuario {
   provedorNuvem ProvedorNuvem @default(R2)
   // Taxa de comissão da plataforma aplicada individualmente a este fotógrafo (%)
   taxaComissao  Decimal       @default(15.0) @db.Decimal(5, 2)
+  // Limite de armazenamento (em MB) — controlado pelo admin, padrão 10GB
+  limiteArmazenamentoMB Int   @default(10240)
   ativo         Boolean       @default(true)
   criadoEm      DateTime      @default(now())
 
@@ -102,6 +104,9 @@ model Foto {
   urlPublica    String
 
   preco         Decimal  @default(15.0) @db.Decimal(10, 2)
+  // Tamanho combinado (original + comprimida) em bytes — usado pro cálculo
+  // de limite de armazenamento do fotógrafo
+  tamanhoBytes  Int      @default(0)
   criadoEm      DateTime @default(now())
 
   itensPedido ItemPedido[]

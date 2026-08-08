@@ -36,6 +36,25 @@ async function listarTodosEventos(req, res) {
 }
 
 /**
+ * PUT /api/admin/eventos/:id/categoria
+ * body: { categoria: 'vaquejada' | 'ciclismo' | 'corrida' | 'futebol' }
+ * Permite ao admin realocar um evento pra outra categoria (ex: o fotógrafo
+ * cadastrou uma vaquejada na categoria errada por engano).
+ */
+async function realocarCategoriaEvento(req, res) {
+  const { categoria } = req.body;
+  const CATEGORIAS_VALIDAS = ['vaquejada', 'ciclismo', 'corrida', 'futebol'];
+  if (!CATEGORIAS_VALIDAS.includes(categoria)) {
+    return res.status(400).json({ erro: `Categoria inválida. Use uma de: ${CATEGORIAS_VALIDAS.join(', ')}` });
+  }
+  const evento = await prisma.evento.update({
+    where: { id: req.params.id },
+    data: { categoria },
+  });
+  res.json(evento);
+}
+
+/**
  * DELETE /api/admin/eventos/:id — "Deletar Tudo"
  * Remove o registro do banco (cascade apaga Fotos/ItemPedido relacionados)
  * E exclui fisicamente os binários (original + público) da nuvem.
@@ -43,29 +62,41 @@ async function listarTodosEventos(req, res) {
 async function deletarEvento(req, res) {
   const { id } = req.params;
 
-  const evento = await prisma.evento.findUnique({
-    where: { id },
-    include: { fotografo: true, fotos: true },
-  });
-  if (!evento) return res.status(404).json({ erro: 'Evento não encontrado.' });
+  try {
+    const evento = await prisma.evento.findUnique({
+      where: { id },
+      include: { fotografo: true, fotos: true },
+    });
+    if (!evento) return res.status(404).json({ erro: 'Evento não encontrado.' });
 
-  const chavesPrivadas = evento.fotos.map((f) => f.chaveOriginal);
-  const chavesPublicas = evento.fotos.map((f) => {
-    const partes = f.urlPublica.split('/');
-    // extrai o "publico/<eventoId>/<arquivo>" a partir da URL pública completa
-    const idx = partes.findIndex((p) => p === 'publico');
-    return partes.slice(idx).join('/');
-  });
+    // A exclusão na nuvem roda em try/catch PRÓPRIO: se falhar (ex: uma
+    // chave já não existe mais, erro de rede pontual, etc.), o evento e
+    // as fotos são removidos do banco mesmo assim — o clique em "Deletar
+    // Tudo" nunca deve travar por causa de um erro no storage.
+    try {
+      const chavesPrivadas = evento.fotos.map((f) => f.chaveOriginal);
+      const chavesPublicas = evento.fotos.map((f) => {
+        const partes = f.urlPublica.split('/');
+        const idx = partes.findIndex((p) => p === 'publico');
+        return idx >= 0 ? partes.slice(idx).join('/') : f.urlPublica;
+      });
 
-  await excluirObjetos({
-    provedorNuvem: evento.fotografo.provedorNuvem,
-    chavesPrivadas,
-    chavesPublicas,
-  });
+      await excluirObjetos({
+        provedorNuvem: evento.fotografo.provedorNuvem,
+        chavesPrivadas,
+        chavesPublicas,
+      });
+    } catch (erroStorage) {
+      console.error(`[admin] Falha ao excluir binários do evento ${id} na nuvem (evento será removido do banco mesmo assim):`, erroStorage);
+    }
 
-  await prisma.evento.delete({ where: { id } }); // cascade: Foto, ItemPedido
+    await prisma.evento.delete({ where: { id } }); // cascade: Foto, ItemPedido
 
-  res.json({ mensagem: 'Evento e todas as fotos foram excluídos permanentemente.' });
+    res.json({ mensagem: 'Evento e todas as fotos foram excluídos permanentemente.' });
+  } catch (err) {
+    console.error('[admin] Erro ao excluir evento:', err);
+    res.status(500).json({ erro: 'Não foi possível excluir o evento. Tente novamente.' });
+  }
 }
 
 // ---------------------------------------------------------------------
@@ -84,13 +115,43 @@ async function listarFotografos(req, res) {
       chavePix: true,
       provedorNuvem: true,
       taxaComissao: true,
+      limiteArmazenamentoMB: true,
       ativo: true,
       criadoEm: true,
       _count: { select: { eventos: true } },
     },
     orderBy: { criadoEm: 'desc' },
   });
-  res.json(fotografos);
+
+  // Soma o armazenamento usado por cada fotógrafo (bytes de todas as fotos dele)
+  const fotografosComUso = await Promise.all(
+    fotografos.map(async (f) => {
+      const uso = await prisma.foto.aggregate({
+        where: { evento: { fotografoId: f.id } },
+        _sum: { tamanhoBytes: true },
+      });
+      const usadoMB = (uso._sum.tamanhoBytes || 0) / (1024 * 1024);
+      return { ...f, armazenamentoUsadoMB: Number(usadoMB.toFixed(1)) };
+    })
+  );
+
+  res.json(fotografosComUso);
+}
+
+/**
+ * PUT /api/admin/fotografos/:id/limite-armazenamento
+ * body: { limiteArmazenamentoMB: number }
+ */
+async function definirLimiteArmazenamento(req, res) {
+  const { limiteArmazenamentoMB } = req.body;
+  if (!limiteArmazenamentoMB || limiteArmazenamentoMB <= 0) {
+    return res.status(400).json({ erro: 'Limite inválido.' });
+  }
+  const fotografo = await prisma.usuario.update({
+    where: { id: req.params.id },
+    data: { limiteArmazenamentoMB },
+  });
+  res.json({ id: fotografo.id, limiteArmazenamentoMB: fotografo.limiteArmazenamentoMB });
 }
 
 /**
@@ -259,10 +320,12 @@ async function atualizarConfig(req, res) {
 module.exports = {
   loginAdmin,
   listarTodosEventos,
+  realocarCategoriaEvento,
   deletarEvento,
   listarFotografos,
   definirProvedorNuvem,
   definirTaxaComissao,
+  definirLimiteArmazenamento,
   listarUsuarios,
   resetarSenha,
   excluirUsuario,
