@@ -5,7 +5,7 @@
  * leve (JPEG) com uma marca d'água em MÚLTIPLAS CAMADAS, pensada
  * especificamente para dificultar remoção automatizada por IA:
  *
- *   1) Marca principal: Seu arquivo SVG personalizado centralizado e dinâmico.
+ *   1) Marca principal: Seu logotipo original em PNG, centralizado e redimensionado.
  *   2) Marcas secundárias menores, espalhadas em posições/rotações/
  *      escalas/opacidades ALEATÓRIAS (com seed por foto).
  *   3) Uma textura fina de linhas, aplicada com blend "overlay".
@@ -14,7 +14,6 @@
 const sharp = require('sharp');
 const crypto = require('crypto');
 const path = require('path');
-const fs = require('fs');
 
 const LARGURA_MAX = parseInt(process.env.WATERMARK_MAX_WIDTH || '1000', 10);
 const QUALIDADE = parseInt(process.env.WATERMARK_QUALITY || '68', 10);
@@ -46,33 +45,6 @@ function criarGeradorPseudoAleatorio(seedStr) {
     t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
     return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
   };
-}
-
-/**
- * CAMADA 1 — Carrega o seu arquivo SVG personalizado e ajusta a escala dele para o centro da foto.
- */
-function obterMarcaPrincipalSvg(larguraFoto, alturaFoto) {
-  const caminhoSvg = path.join(__dirname, 'marca-dagua.svg');
-  
-  // Lemos o conteúdo do seu arquivo SVG como texto
-  let conteudoSvg = fs.readFileSync(caminhoSvg, 'utf-8');
-
-  // Remove tags de abertura/fechamento do SVG original se existirem, para embutir no nosso container
-  conteudoSvg = conteudoSvg
-    .replace(/<svg[^>]*>/, '')
-    .replace(/<\/svg>/, '');
-
-  // DEFINA O TAMANHO DA SUA MARCA: 0.75 significa que ela ocupará 75% da largura da foto
-  const larguraMarca = Math.floor(larguraFoto * 0.75);
-  
-  // Centralização matemática simples do elemento gráfico
-  const cx = larguraFoto / 2;
-  const cy = alturaFoto / 2;
-
-  // Embutimos o seu SVG dentro de uma tag <g> (grupo) aplicando opacidade e escala controladas
-  return `<g fill="white" opacity="0.45" transform="translate(${cx}, ${cy}) scale(${larguraMarca / 500}) translate(-250, -250)">
-    ${conteudoSvg}
-  </g>`;
 }
 
 /**
@@ -135,20 +107,30 @@ async function comprimirEAplicarMarcaDagua(bufferOriginal, seed) {
   const rand = criarGeradorPseudoAleatorio(seed || crypto.randomUUID());
   const { width: w, height: h } = info;
 
-  // Junta o seu SVG com as marcas secundárias e o rodapé num único arquivo de texto SVG
+  // 1. Gerar os SVGs de texto e texturas de forma isolada
   const svgTextos = `<svg width="${w}" height="${h}" xmlns="http://w3.org">
     ${gerarMarcasSecundarias(w, h, rand)}
-    ${obterMarcaPrincipalSvg(w, h)}
     ${gerarRodapeDireitos(w, h)}
   </svg>`;
 
   const svgTextura = gerarTexturaInterativa(w, h, rand);
 
-  // Processa tudo em um único bloco de composição rápido e nativo
+  // 2. Redimensionar o seu arquivo PNG original de forma isolada
+  const caminhoPng = path.join(__dirname, 'marca-agua.png');
+  
+  // TAMANHO DA MARCA: O logo vai ocupar 75% da largura da foto (ajuste aqui se quiser mudar)
+  const larguraMarca = Math.floor(w * 0.75); 
+
+  const marcaRedimensionada = await sharp(caminhoPng)
+    .resize({ width: larguraMarca })
+    .toBuffer();
+
+  // 3. Composição final em uma única passada estável, aplicando o PNG por cima dos vetores
   const resultado = await sharp(bufferBase)
     .composite([
-      { input: Buffer.from(svgTextura), blend: 'overlay' }, // Camada de textura nos pixels
-      { input: Buffer.from(svgTextos), blend: 'over' }      // Camada unificada de todos os vetores/textos
+      { input: Buffer.from(svgTextura), blend: 'overlay' },
+      { input: Buffer.from(svgTextos), blend: 'over' },
+      { input: marcaRedimensionada, gravity: 'center', blend: 'over' } // Seu logo PNG aplicado de forma nativa e segura
     ])
     .jpeg({ quality: QUALIDADE, mozjpeg: true })
     .toBuffer();
