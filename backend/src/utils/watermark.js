@@ -51,22 +51,22 @@ function criarGeradorPseudoAleatorio(seedStr) {
  * CAMADA 1 — marca principal utilizando o seu arquivo PNG personalizado.
  */
 async function gerarMarcaPrincipalPng(larguraFoto) {
-  // Caminho do arquivo da sua marca (deve estar na mesma pasta deste script)
+  // Localiza o arquivo na mesma pasta deste script
   const caminhoPng = path.join(__dirname, 'marca-dagua.png');
 
-  // AJUSTE DE TAMANHO: O logo vai ocupar 75% da largura total da foto.
+  // O logo vai ocupar 75% da largura total da foto.
   // Mude para 0.85 se quiser maior, ou 0.60 se quiser menor.
   const larguraMarca = Math.floor(larguraFoto * 0.75);
 
-  // Processa o PNG definindo largura proporcional e opacidade
+  // Processa o PNG apenas redimensionando
   const marcaRedimensionada = await sharp(caminhoPng)
     .resize({ width: larguraMarca })
-    .ensureAlpha(0.45) // AJUSTE DE OPACIDADE: 0.45 significa 45% visível.
     .toBuffer();
 
   return {
     input: marcaRedimensionada,
-    gravity: 'center' // Mantém o logotipo perfeitamente no centro da foto
+    gravity: 'center', // Mantém o logotipo perfeitamente no centro da foto
+    blend: 'over'      // Combina a imagem respeitando a transparência original do PNG
   };
 }
 
@@ -138,7 +138,7 @@ async function comprimirEAplicarMarcaDagua(bufferOriginal, seed) {
 
   const svgTextura = gerarTexturaInterativa(w, h, rand);
   
-  // Carrega e processa a camada do seu logotipo PNG personalizado de forma assíncrona
+  // Carrega e calcula as dimensões da camada do seu logotipo PNG personalizado
   const camadaMarcaPng = await gerarMarcaPrincipalPng(w);
 
   // Composição final mesclando todas as camadas de proteção criadas
@@ -146,7 +146,7 @@ async function comprimirEAplicarMarcaDagua(bufferOriginal, seed) {
     .composite([
       { input: Buffer.from(svgTextura), blend: 'overlay' }, // Camada de textura interativa nos pixels
       { input: Buffer.from(svgTextos), blend: 'over' },     // Camada de textos secundários do padrão anterior
-      camadaMarcaPng                                        // Camada centralizada do seu logotipo PNG
+      camadaMarcaPng                                        // Camada centralizada do seu logotipo PNG corrigida
     ])
     .jpeg({ quality: QUALIDADE, mozjpeg: true })
     .toBuffer();
