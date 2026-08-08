@@ -37,6 +37,13 @@ app.use(
 
 app.use(express.json({ limit: '2mb' }));
 
+app.get('/', (req, res) =>
+  res.json({
+    mensagem: 'API do iphotos no ar. Isto aqui é o backend — o site fica no GitHub Pages.',
+    saude: '/api/saude',
+  })
+);
+
 app.get('/api/saude', (req, res) => res.json({ status: 'ok', servico: 'iphotos-backend' }));
 
 app.use('/api/auth', authRoutes);
