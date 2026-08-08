@@ -38,12 +38,8 @@
     </div>
   </header>
 
-  <div class="faixa-aviso" id="faixa-dinamica">
-    Você está vendo eventos do Brasil 🔽
-  </div>
-
   <section class="hero">
-    <h1>suas fotos aqui!</h1>
+    <div class="hero-slides" id="hero-slides"></div>
     <div class="container-busca">
       <input type="text" id="campo-busca-texto" placeholder="Digite o nome do evento..." class="input-busca" oninput="filtrarEventos()" />
       <button class="btn-busca" id="btn-busca-dinamico">🔍</button>
@@ -67,6 +63,39 @@
   </a>
   <!-- SCRIPT DE INTERATIVIDADE, FILTRAGEM E ACESSOS DA API -->
   <script>
+    // ============================================================
+    // CARROSSEL DO BANNER — cole aqui as URLs das suas imagens
+    // (até 10). Deixe a lista vazia [] pra manter o fundo azul normal.
+    // Exemplo:
+    // const imagensBannerHero = [
+    //   'assets/banner/foto1.jpg',
+    //   'assets/banner/foto2.jpg',
+    //   'assets/banner/foto3.jpg',
+    // ];
+    // ============================================================
+    const imagensBannerHero = [];
+    const INTERVALO_TROCA_BANNER_MS = 4500;
+
+    function iniciarCarrosselHero() {
+      if (!imagensBannerHero.length) return; // sem imagens = mantém o azul padrão
+
+      const container = document.getElementById('hero-slides');
+      container.innerHTML = imagensBannerHero.slice(0, 10).map((url, i) =>
+        `<div class="hero-slide${i === 0 ? ' ativo' : ''}" style="background-image:url('${url}')"></div>`
+      ).join('');
+      document.querySelector('.hero').classList.add('hero-com-imagem');
+
+      const slides = container.querySelectorAll('.hero-slide');
+      if (slides.length <= 1) return; // 1 imagem só = fica fixa, sem transição
+
+      let indiceAtual = 0;
+      setInterval(() => {
+        slides[indiceAtual].classList.remove('ativo');
+        indiceAtual = (indiceAtual + 1) % slides.length; // looping infinito
+        slides[indiceAtual].classList.add('ativo');
+      }, INTERVALO_TROCA_BANNER_MS);
+    }
+
     const listaCategoriasBD = [
       { id: "vaquejada", nome: "Vaquejada", iconeURL: "vaquejada.png", altFallback: "🐎", tituloSecao: "Coberturas de Vaquejada" },
       { id: "ciclismo", nome: "Ciclismo", iconeURL: "ciclismo.png", altFallback: "🚴", tituloSecao: "Eventos de Ciclismo" },
@@ -80,6 +109,7 @@
     let coresCategoria = { vaquejada: '#00b4d8', ciclismo: '#00b4d8', corrida: '#00b4d8', futebol: '#00b4d8' };
 
     window.onload = () => {
+      iniciarCarrosselHero();
       if(localStorage.getItem('iphotos_primaria')) {
         document.documentElement.style.setProperty('--cor-primaria', localStorage.getItem('iphotos_primaria'));
       }
@@ -206,14 +236,12 @@
       if(categoria === 'todos') {
         document.getElementById('logo-dot').style.color = 'var(--cor-primaria)';
         document.getElementById('btn-login-dinamico').style.backgroundColor = 'var(--cor-primaria)';
-        document.getElementById('faixa-dinamica').style.backgroundColor = 'var(--cor-primaria)';
         document.getElementById('btn-busca-dinamico').style.backgroundColor = 'var(--cor-primaria)';
         document.getElementById('titulo-listagem').innerText = "Todos os Eventos";
       } else {
         const corAtiva = coresCategoria[categoria] || 'var(--cor-primaria)';
         document.getElementById('logo-dot').style.color = corAtiva;
         document.getElementById('btn-login-dinamico').style.backgroundColor = corAtiva;
-        document.getElementById('faixa-dinamica').style.backgroundColor = corAtiva;
         document.getElementById('btn-busca-dinamico').style.backgroundColor = corAtiva;
         const catInfo = listaCategoriasBD.find(c => c.id === categoria);
         document.getElementById('titulo-listagem').innerText = catInfo ? catInfo.tituloSecao : "Eventos";

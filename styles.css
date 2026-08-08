@@ -11,6 +11,9 @@
   --cor-card-borda: #cbd5e1;        
 }
 
+/* Carrossel do banner: as imagens são configuradas no array
+   `imagensBannerHero` dentro do <script> do index.html — não aqui. */
+
 * {
   box-sizing: border-box;
   margin: 0;
@@ -73,10 +76,53 @@ body {
 }
 
 .hero {
+  position: relative;
+  overflow: hidden;
   background: linear-gradient(to right, var(--cor-hero-gradiente-1), var(--cor-hero-gradiente-2));
   color: white;
   text-align: center;
   padding: 60px 20px;
+  min-height: 200px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Container dos slides do carrossel — fica vazio (e invisível) enquanto
+   você não colocar nenhuma URL em imagensBannerHero no index.html */
+.hero-slides {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+
+.hero-slide {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  opacity: 0;
+  transition: opacity 1.2s ease-in-out;
+}
+
+.hero-slide.ativo {
+  opacity: 1;
+}
+
+/* Leve escurecida por cima das fotos pra manter a busca legível,
+   só aparece quando existe imagem no carrossel */
+.hero.hero-com-imagem::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.35);
+  z-index: 0;
+}
+
+.hero .container-busca {
+  position: relative;
+  z-index: 1;
 }
 
 .hero h1 {
@@ -155,10 +201,13 @@ body {
 }
 
 .img-categoria {
-  width: 32px;
-  height: 32px;
+  width: 40px;
+  height: 40px;
   object-fit: contain;
-  border-radius: 50%;
+  border-radius: 10px;
+  background: #f1f5f9;
+  padding: 6px;
+  box-sizing: border-box;
   transition: transform 0.2s;
 }
 
