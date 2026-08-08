@@ -11,23 +11,37 @@ const QUALIDADE = parseInt(
   10
 );
 
-const WATERMARK_PATH = path.join(__dirname, 'watermark.png');
+const WATERMARK_PATH = path.join(
+  __dirname,
+  'watermark.png'
+);
 
 
 async function comprimirEAplicarMarcaDagua(bufferOriginal) {
 
-  // FOTO ORIGINAL
+  // =====================================================
+  // 1. CARREGA A FOTO ORIGINAL
+  // =====================================================
+
   const imagem = sharp(bufferOriginal).rotate();
 
   const metadata = await imagem.metadata();
 
-  // Largura máxima da foto
+
+  // =====================================================
+  // 2. DEFINE O TAMANHO FINAL DA FOTO
+  // =====================================================
+
   const larguraFinal = Math.min(
     metadata.width || LARGURA_MAX,
     LARGURA_MAX
   );
 
-  // Redimensiona a foto
+
+  // =====================================================
+  // 3. REDIMENSIONA E COMPRIME A FOTO
+  // =====================================================
+
   const {
     data: bufferBase,
     info
@@ -43,26 +57,34 @@ async function comprimirEAplicarMarcaDagua(bufferOriginal) {
       resolveWithObject: true
     });
 
+
   const largura = info.width;
   const altura = info.height;
 
 
   // =====================================================
-  // MARCA D'ÁGUA PNG DO PHOTOSHOP
+  // 4. CARREGA A MARCA D'ÁGUA DO PHOTOSHOP
   // =====================================================
 
   const watermark = await sharp(WATERMARK_PATH)
     .ensureAlpha()
+
+    // Faz o PNG ocupar EXATAMENTE a área da foto.
+    // "cover" mantém a proporção do PNG e corta
+    // apenas o excesso necessário.
     .resize({
       width: largura,
-      withoutEnlargement: true
+      height: altura,
+      fit: 'cover',
+      position: 'center'
     })
+
     .png()
     .toBuffer();
 
 
   // =====================================================
-  // APLICA A MARCA
+  // 5. APLICA A MARCA D'ÁGUA
   // =====================================================
 
   const resultado = await sharp(bufferBase)
@@ -79,6 +101,10 @@ async function comprimirEAplicarMarcaDagua(bufferOriginal) {
     })
     .toBuffer();
 
+
+  // =====================================================
+  // 6. RETORNA A FOTO FINAL
+  // =====================================================
 
   return resultado;
 }
