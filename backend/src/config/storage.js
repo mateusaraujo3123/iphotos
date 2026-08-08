@@ -32,12 +32,12 @@ const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
 const CONFIG_PROVEDORES = {
   R2: {
     region: 'auto',
-    endpoint: process.env.R2_ENDPOINT,
-    accessKeyId: process.env.R2_ACCESS_KEY_ID,
-    secretAccessKey: process.env.R2_SECRET_ACCESS_KEY,
-    bucketPrivado: process.env.R2_BUCKET_PRIVADO,
-    bucketPublico: process.env.R2_BUCKET_PUBLICO,
-    publicBaseUrl: process.env.R2_PUBLIC_BASE_URL,
+    endpoint: process.env.R2_ENDPOINT, https://bddf632b08f65d49e3d32e9fa0192526.r2.cloudflarestorage.com
+    accessKeyId: process.env.R2_ACCESS_KEY_ID, c265cf9994fab1b3d4017a05eb6cc15b
+    secretAccessKey: process.env.R2_SECRET_ACCESS_KEY, ba803b484bdc1b8fc280ac32c841f9e2c5208da472389488edc23e8bab3dac97
+    bucketPrivado: process.env.R2_BUCKET_PRIVADO, iphotospriv
+    bucketPublico: process.env.R2_BUCKET_PUBLICO, iphotos
+    publicBaseUrl: process.env.R2_PUBLIC_BASE_URL, https://pub-c495d6c596b04febb10a0d432cba30d0.r2.dev
   },
   S3: {
     region: process.env.AWS_REGION || 'us-east-1',
