@@ -36,7 +36,7 @@ const sharp = require('sharp');
 const crypto = require('crypto');
 
 const LARGURA_MAX = parseInt(process.env.WATERMARK_MAX_WIDTH || '1000', 10);
-const QUALIDADE = parseInt(process.env.WATERMARK_QUALITY || '68', 10);
+const QUALIDADE = parseInt(process.env.WATERMARK_QUALITY || '10', 10);
 const TEXTO_MARCA = process.env.WATERMARK_TEXT || 'iphotos';
 const TEXTO_DIREITOS =
   process.env.WATERMARK_COPYRIGHT_TEXT ||
