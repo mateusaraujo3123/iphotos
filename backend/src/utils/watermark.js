@@ -1,12 +1,3 @@
-/**
- * Esteira de compressão + marca d'água
- *
- * Usa uma marca d'água PNG criada externamente
- * (ex.: Photoshop) e aplica sobre a imagem.
- *
- * O arquivo original nunca é alterado.
- */
-
 const sharp = require('sharp');
 const path = require('path');
 
@@ -16,45 +7,27 @@ const LARGURA_MAX = parseInt(
 );
 
 const QUALIDADE = parseInt(
-  process.env.WATERMARK_QUALITY || '10',
+  process.env.WATERMARK_QUALITY || '75',
   10
 );
 
-// PNG criado no Photoshop
-const WATERMARK_PATH = path.join(
-  __dirname,
-  'watermark.png'
-);
+const WATERMARK_PATH = path.join(__dirname, 'watermark.png');
 
-/**
- * Comprime a imagem e aplica a marca d'água PNG.
- *
- * @param {Buffer} bufferOriginal
- * @returns {Promise<Buffer>} JPEG final
- */
+
 async function comprimirEAplicarMarcaDagua(bufferOriginal) {
 
-  // ---------------------------------------------------------
-  // 1. Carrega a imagem original
-  // ---------------------------------------------------------
-
+  // FOTO ORIGINAL
   const imagem = sharp(bufferOriginal).rotate();
 
   const metadata = await imagem.metadata();
 
-  // ---------------------------------------------------------
-  // 2. Define a largura final
-  // ---------------------------------------------------------
-
+  // Largura máxima da foto
   const larguraFinal = Math.min(
     metadata.width || LARGURA_MAX,
     LARGURA_MAX
   );
 
-  // ---------------------------------------------------------
-  // 3. Redimensiona e comprime a foto
-  // ---------------------------------------------------------
-
+  // Redimensiona a foto
   const {
     data: bufferBase,
     info
@@ -73,29 +46,31 @@ async function comprimirEAplicarMarcaDagua(bufferOriginal) {
   const largura = info.width;
   const altura = info.height;
 
-  // ---------------------------------------------------------
-  // 4. Carrega o PNG criado no Photoshop
-  // ---------------------------------------------------------
+
+  // =====================================================
+  // MARCA D'ÁGUA PNG DO PHOTOSHOP
+  // =====================================================
 
   const watermark = await sharp(WATERMARK_PATH)
+    .ensureAlpha()
     .resize({
       width: largura,
-      height: altura,
-      fit: 'contain',
-      position: 'centre'
+      withoutEnlargement: true
     })
     .png()
     .toBuffer();
 
-  // ---------------------------------------------------------
-  // 5. Aplica o PNG sobre a fotografia
-  // ---------------------------------------------------------
+
+  // =====================================================
+  // APLICA A MARCA
+  // =====================================================
 
   const resultado = await sharp(bufferBase)
     .composite([
       {
         input: watermark,
-        blend: 'over'
+        blend: 'over',
+        gravity: 'center'
       }
     ])
     .jpeg({
@@ -104,12 +79,10 @@ async function comprimirEAplicarMarcaDagua(bufferOriginal) {
     })
     .toBuffer();
 
-  // ---------------------------------------------------------
-  // 6. Retorna o JPEG final
-  // ---------------------------------------------------------
 
   return resultado;
 }
+
 
 module.exports = {
   comprimirEAplicarMarcaDagua
