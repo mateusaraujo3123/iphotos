@@ -76,7 +76,7 @@ function criarGeradorPseudoAleatorio(seedStr) {
  */
 function gerarMarcaPrincipal(largura, altura, rand) {
   const angulo = -30 + rand() * 14; // entre -30° e -16°
-  const fonte = Math.max(30, Math.floor(largura / 6));
+  const fonte = Math.max(30, Math.floor(largura / 2));
   const cx = largura / 2 + (rand() - 0.5) * largura * 0.12;
   const cy = altura / 2 + (rand() - 0.5) * altura * 0.12;
 
