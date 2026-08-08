@@ -115,22 +115,22 @@ async function comprimirEAplicarMarcaDagua(bufferOriginal, seed) {
 
   const svgTextura = gerarTexturaInterativa(w, h, rand);
 
-  // 2. Redimensionar o seu arquivo PNG original de forma isolada
-  const caminhoPng = path.join(__dirname, 'marca-agua.png');
+  // 2. Resolve o caminho absoluto a partir do diretório raiz de execução do processo do contêiner
+  const caminhoPng = path.join(process.cwd(), 'src', 'utils', 'marca-agua.png');
   
-  // TAMANHO DA MARCA: O logo vai ocupar 75% da largura da foto (ajuste aqui se quiser mudar)
+  // TAMANHO DA MARCA: O logo vai ocupar 75% da largura da foto
   const larguraMarca = Math.floor(w * 0.75); 
 
   const marcaRedimensionada = await sharp(caminhoPng)
     .resize({ width: larguraMarca })
     .toBuffer();
 
-  // 3. Composição final em uma única passada estável, aplicando o PNG por cima dos vetores
+  // 3. Composição final unificada aplicando o PNG por cima dos vetores
   const resultado = await sharp(bufferBase)
     .composite([
       { input: Buffer.from(svgTextura), blend: 'overlay' },
       { input: Buffer.from(svgTextos), blend: 'over' },
-      { input: marcaRedimensionada, gravity: 'center', blend: 'over' } // Seu logo PNG aplicado de forma nativa e segura
+      { input: marcaRedimensionada, gravity: 'center', blend: 'over' }
     ])
     .jpeg({ quality: QUALIDADE, mozjpeg: true })
     .toBuffer();
