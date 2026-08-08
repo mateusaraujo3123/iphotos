@@ -10,4 +10,4 @@ cmds = ["npm install"]
 cmds = ["npx prisma generate"]
 
 [start]
-cmd = "npx prisma migrate deploy && npm start"
+cmd = "npx prisma db push --accept-data-loss && npm start"

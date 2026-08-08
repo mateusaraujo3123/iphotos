@@ -14,6 +14,10 @@ const { iniciarCronDeExpiracao } = require('./jobs/expirationCron');
 
 const app = express();
 
+// Necessário no Railway/Render/qualquer PaaS atrás de proxy reverso —
+// sem isso, o express-rate-limit não consegue identificar o IP real do usuário.
+app.set('trust proxy', 1);
+
 app.use(helmet());
 app.use(
   cors({
