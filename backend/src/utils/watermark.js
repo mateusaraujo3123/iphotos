@@ -84,7 +84,7 @@ function gerarMarcaPrincipal(largura, altura, rand) {
   for (let i = -2; i <= 2; i++) {
     const y = cy + i * fonte * 1.5;
     textos += `<text x="${cx}" y="${y}" font-size="${fonte}" font-family="Arial, sans-serif" font-weight="800"
-      fill="white" fill-opacity="0.32" text-anchor="middle" transform="rotate(${angulo.toFixed(1)} ${cx} ${y})">${escaparXml(TEXTO_MARCA)}</text>`;
+      fill="white" fill-opacity="0.60" text-anchor="middle" transform="rotate(${angulo.toFixed(1)} ${cx} ${y})">${escaparXml(TEXTO_MARCA)}</text>`;
   }
   return textos;
 }
@@ -95,7 +95,7 @@ function gerarMarcaPrincipal(largura, altura, rand) {
  * (não é um grid previsível).
  */
 function gerarMarcasSecundarias(largura, altura, rand) {
-  const QUANTIDADE = 13;
+  const QUANTIDADE =38;
   let textos = '';
   for (let i = 0; i < QUANTIDADE; i++) {
     const x = rand() * largura;
