@@ -290,18 +290,13 @@ body {
   box-shadow: 0 10px 20px rgba(0,0,0,0.05);
 }
 
-/* ATUALIZADO: Renderizador para a foto de capa real definida pelo fotógrafo */
+/* ATUALIZADO: Renderizador para a foto de capa real definida pelo fotógrafo — 1:1 quadrado */
 .card-capa-wrapper {
-  height: 140px;
+  aspect-ratio: 1 / 1;
+  width: 100%;
   background-color: #cbd5e1;
   position: relative;
   overflow: hidden;
-}
-
-@media (min-width: 768px) {
-  .card-capa-wrapper {
-    height: 180px;
-  }
 }
 
 .img-capa-evento {
