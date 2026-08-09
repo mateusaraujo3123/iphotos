@@ -243,4 +243,20 @@ async function comprimirEAplicarMarcaDagua(bufferOriginal, seed) {
   return resultado;
 }
 
-module.exports = { comprimirEAplicarMarcaDagua };
+/**
+ * Comprime a foto SEM nenhuma camada de marca d'água — usada só pra gerar
+ * a foto de CAPA do evento (a que aparece nos cards do index.html), que
+ * não precisa da proteção (não é a foto de venda em si, é só a vitrine).
+ */
+async function apenasComprimir(bufferOriginal) {
+  const imagem = sharp(bufferOriginal).rotate();
+  const metadata = await imagem.metadata();
+  const larguraFinal = Math.min(metadata.width || LARGURA_MAX, LARGURA_MAX);
+
+  return imagem
+    .resize({ width: larguraFinal, withoutEnlargement: true })
+    .jpeg({ quality: QUALIDADE, mozjpeg: true })
+    .toBuffer();
+}
+
+module.exports = { comprimirEAplicarMarcaDagua, apenasComprimir };

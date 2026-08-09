@@ -97,6 +97,22 @@
         </div>
       </div>
 
+      <!-- HISTÓRICO DE VENDAS -->
+      <div class="card-painel">
+        <h2>Histórico de Vendas</h2>
+        <div id="lista-historico-vendas" style="max-height:340px; overflow-y:auto;">
+          <p style="font-size:13px; color:#64748b;">Carregando...</p>
+        </div>
+      </div>
+
+      <!-- HISTÓRICO DE SAQUES -->
+      <div class="card-painel">
+        <h2>Histórico de Saques</h2>
+        <div id="lista-historico-saques">
+          <p style="font-size:13px; color:#64748b;">Carregando...</p>
+        </div>
+      </div>
+
       <!-- CARD GERENCIADOR DE SAQUE PIX -->
       <div class="card-painel">
         <h2>Solicitação de Saque</h2>
@@ -353,6 +369,7 @@
         alert(`Solicitação registrada!\nO valor de R$ ${valor.toFixed(2)} foi enviado para análise na mesa de saques do Painel Admin.`);
         e.target.reset();
         carregarFaturamento();
+        carregarHistoricoSaques();
       } catch (err) {
         alert(err.message);
       }
@@ -481,11 +498,60 @@
       }
     }
 
+    async function carregarHistoricoVendas() {
+      const container = document.getElementById('lista-historico-vendas');
+      try {
+        const vendas = await apiFetch('/fotografo/vendas');
+        if (!vendas.length) {
+          container.innerHTML = '<p style="font-size:13px; color:#64748b;">Nenhuma venda registrada ainda.</p>';
+          return;
+        }
+        container.innerHTML = vendas.map(v => `
+          <div style="display:flex; align-items:center; gap:10px; padding:8px 0; border-bottom:1px solid #f1f5f9;">
+            <img src="${v.urlPublica}" style="width:44px; height:44px; object-fit:cover; border-radius:6px;" alt="Foto vendida">
+            <div style="flex:1; min-width:0;">
+              <p style="font-size:13px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${emojiPorCategoria[v.eventoCategoria] || '📷'} ${v.eventoTitulo}</p>
+              <p style="font-size:11px; color:#64748b;">${v.clienteNome} • ${v.pagoEm ? new Date(v.pagoEm).toLocaleDateString('pt-BR') : ''}</p>
+            </div>
+            <strong style="font-size:13px; color:#166534; white-space:nowrap;">R$ ${Number(v.preco).toFixed(2)}</strong>
+          </div>
+        `).join('');
+      } catch (err) {
+        container.innerHTML = `<p style="font-size:13px; color:#e63946;">${err.message}</p>`;
+      }
+    }
+
+    const ROTULO_STATUS_SAQUE = { PENDENTE: '⏳ Pendente', PAGO: '✅ Pago', RECUSADO: '❌ Recusado' };
+
+    async function carregarHistoricoSaques() {
+      const container = document.getElementById('lista-historico-saques');
+      try {
+        const saques = await apiFetch('/fotografo/saques');
+        if (!saques.length) {
+          container.innerHTML = '<p style="font-size:13px; color:#64748b;">Nenhum saque solicitado ainda.</p>';
+          return;
+        }
+        container.innerHTML = saques.map(s => `
+          <div style="display:flex; align-items:center; justify-content:space-between; padding:8px 0; border-bottom:1px solid #f1f5f9;">
+            <div>
+              <p style="font-size:13px; font-weight:600;">R$ ${Number(s.valor).toFixed(2)}</p>
+              <p style="font-size:11px; color:#64748b;">Solicitado em ${new Date(s.solicitadoEm).toLocaleDateString('pt-BR')}${s.pagoEm ? ' • Pago em ' + new Date(s.pagoEm).toLocaleDateString('pt-BR') : ''}</p>
+            </div>
+            <span style="font-size:12px; font-weight:600;">${ROTULO_STATUS_SAQUE[s.status] || s.status}</span>
+          </div>
+        `).join('');
+      } catch (err) {
+        container.innerHTML = `<p style="font-size:13px; color:#e63946;">${err.message}</p>`;
+      }
+    }
+
     window.onload = () => {
       document.getElementById('nome-dinamico-painel-fotografo').innerText = AuthStorage.getNome() || 'Fotógrafo Parceiro';
       carregarFaturamento();
       carregarMeusEventos();
       carregarArmazenamento();
+      carregarHistoricoVendas();
+      carregarHistoricoSaques();
     };
   </script>
 </body>

@@ -61,6 +61,56 @@ async function listarTodosEventos(req, res) {
  * Permite ao admin realocar um evento pra outra categoria (ex: o fotógrafo
  * cadastrou uma vaquejada na categoria errada por engano).
  */
+/**
+ * POST /api/admin/eventos/:id/regenerar-capa
+ * Corrige eventos ANTIGOS cuja capa foi salva com marca d'água (antes
+ * dessa separação existir): baixa o original da primeira foto do evento,
+ * gera uma versão limpa (sem marca) e define como a nova capa.
+ */
+async function regenerarCapaEvento(req, res) {
+  const { id } = req.params;
+  const { baixarObjetoPrivado, salvarPublico } = require('../config/storage');
+  const { apenasComprimir } = require('../utils/watermark');
+  const { v4: uuid } = require('uuid');
+
+  const evento = await prisma.evento.findUnique({
+    where: { id },
+    include: {
+      fotografo: true,
+      fotos: { orderBy: { criadoEm: 'asc' }, take: 1 },
+    },
+  });
+  if (!evento) return res.status(404).json({ erro: 'Evento não encontrado.' });
+  if (!evento.fotos.length) return res.status(400).json({ erro: 'Este evento ainda não tem nenhuma foto.' });
+
+  try {
+    const primeiraFoto = evento.fotos[0];
+    const bufferOriginal = await baixarObjetoPrivado({
+      provedorNuvem: evento.fotografo.provedorNuvem,
+      chave: primeiraFoto.chaveOriginal,
+    });
+
+    const bufferCapaLimpa = await apenasComprimir(bufferOriginal);
+    const chaveCapa = `publico/${id}/capa-${uuid()}.jpg`;
+    const novaUrlCapa = await salvarPublico({
+      provedorNuvem: evento.fotografo.provedorNuvem,
+      chave: chaveCapa,
+      buffer: bufferCapaLimpa,
+      contentType: 'image/jpeg',
+    });
+
+    const eventoAtualizado = await prisma.evento.update({
+      where: { id },
+      data: { fotoCapaUrl: novaUrlCapa },
+    });
+
+    res.json({ mensagem: 'Capa regenerada sem marca d\'água.', fotoCapaUrl: eventoAtualizado.fotoCapaUrl });
+  } catch (err) {
+    console.error(`[admin] Falha ao regenerar capa do evento ${id}:`, err);
+    res.status(500).json({ erro: 'Não foi possível regenerar a capa. Tente novamente.' });
+  }
+}
+
 async function realocarCategoriaEvento(req, res) {
   const { categoria } = req.body;
   const CATEGORIAS_VALIDAS = ['vaquejada', 'ciclismo', 'corrida', 'futebol'];
@@ -281,6 +331,24 @@ async function alternarStatusCupom(req, res) {
 // ---------------------------------------------------------------------
 
 /** GET /api/admin/saques?status=PENDENTE */
+/**
+ * GET /api/admin/pedidos
+ * Histórico de TODAS as compras pagas na plataforma — pra transparência
+ * geral do admin (quem comprou, o quê, quando, quanto).
+ */
+async function listarTodosPedidos(req, res) {
+  const pedidos = await prisma.pedido.findMany({
+    where: { status: 'PAGO' },
+    include: {
+      cliente: { select: { nome: true, email: true } },
+      itens: { include: { foto: { include: { evento: { select: { titulo: true, fotografo: { select: { nome: true } } } } } } } },
+    },
+    orderBy: { pagoEm: 'desc' },
+    take: 200, // limite razoável pra não sobrecarregar o painel
+  });
+  res.json(pedidos);
+}
+
 async function listarSaques(req, res) {
   const { status } = req.query;
   const saques = await prisma.solicitacaoSaque.findMany({
@@ -341,6 +409,7 @@ module.exports = {
   loginAdmin,
   registrarWebhookEfi,
   listarTodosEventos,
+  regenerarCapaEvento,
   realocarCategoriaEvento,
   deletarEvento,
   listarFotografos,
@@ -353,6 +422,7 @@ module.exports = {
   criarCupom,
   listarCupons,
   alternarStatusCupom,
+  listarTodosPedidos,
   listarSaques,
   marcarSaquePago,
   recusarSaque,

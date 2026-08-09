@@ -63,11 +63,29 @@
 
       <!-- Interface de Pagamento via Código Copia e Cola / QR Code -->
       <div class="area-pix" id="bloco-pix" style="display:none;">
-        <p style="font-size: 14px; font-weight: bold; color: #00b4d8;">PIX Gerado com Sucesso!</p>
-        <img id="qr-code-real" src="" alt="QR Code Pix" style="width:180px; height:180px; margin:0 auto; display:block;" />
-        <p style="font-size: 12px; color: #64748b; margin: 12px 0;">Escaneie o código ou utilize o Pix Copia e Cola abaixo:</p>
-        <input type="text" id="pix-copia-cola" value="" readonly style="width: 100%; padding: 8px; font-size: 11px; text-align: center; border: 1px solid #cbd5e1; border-radius: 4px; background: #f1f5f9; outline: none;" />
-        <p id="status-pagamento" style="font-size: 13px; color: #64748b; margin-top: 12px;">Aguardando confirmação do pagamento...</p>
+        <div class="pix-selo-sucesso">
+          <span class="pix-selo-icone">✓</span>
+          <span>Pix gerado com sucesso</span>
+        </div>
+
+        <div class="pix-qrcode-moldura">
+          <img id="qr-code-real" src="" alt="QR Code Pix" />
+        </div>
+
+        <p class="pix-instrucao">Escaneie o QR Code ou copie o código abaixo no app do seu banco:</p>
+
+        <div class="pix-copia-cola-caixa">
+          <input type="text" id="pix-copia-cola" value="" readonly onclick="this.select()" />
+          <button type="button" id="btn-copiar-pix" class="pix-btn-copiar" onclick="copiarCodigoPix()">
+            <span id="pix-copiar-icone">📋</span>
+            <span id="pix-copiar-texto">Copiar</span>
+          </button>
+        </div>
+
+        <div class="pix-status-aguardando">
+          <span class="pix-spinner"></span>
+          <p id="status-pagamento">Aguardando confirmação do pagamento...</p>
+        </div>
       </div>
     </div>
 
@@ -159,6 +177,54 @@
         btn.disabled = false;
         btn.innerText = 'Gerar Pagamento PIX';
       }
+    }
+
+    async function copiarCodigoPix() {
+      const input = document.getElementById('pix-copia-cola');
+      const btn = document.getElementById('btn-copiar-pix');
+      const icone = document.getElementById('pix-copiar-icone');
+      const texto = document.getElementById('pix-copiar-texto');
+
+      let copiou = false;
+      try {
+        if (navigator.clipboard && window.isSecureContext) {
+          await navigator.clipboard.writeText(input.value);
+          copiou = true;
+        }
+      } catch (err) {
+        copiou = false;
+      }
+
+      if (!copiou) {
+        // Fallback pra navegadores/celulares que bloqueiam a Clipboard API
+        input.removeAttribute('readonly');
+        input.focus();
+        input.select();
+        input.setSelectionRange(0, input.value.length);
+        try {
+          copiou = document.execCommand('copy');
+        } catch (err) {
+          copiou = false;
+        }
+        input.setAttribute('readonly', true);
+      }
+
+      if (copiou) {
+        btn.classList.add('copiado');
+        icone.innerText = '✅';
+        texto.innerText = 'Copiado!';
+      } else {
+        icone.innerText = '⚠️';
+        texto.innerText = 'Selecione e copie';
+        input.focus();
+        input.select();
+      }
+
+      setTimeout(() => {
+        btn.classList.remove('copiado');
+        icone.innerText = '📋';
+        texto.innerText = 'Copiar';
+      }, 2500);
     }
 
     function iniciarPollingPagamento(pedidoId) {

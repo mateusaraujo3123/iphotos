@@ -14,6 +14,7 @@ router.post('/eventos/:id/fotos', upload.array('fotos', 60), ctrl.enviarLoteFoto
 router.delete('/fotos/:fotoId', ctrl.removerFoto);
 router.get('/armazenamento', ctrl.armazenamento);
 router.get('/faturamento', ctrl.faturamento);
+router.get('/vendas', ctrl.minhasVendas);
 router.put('/perfil', ctrl.atualizarPerfil);
 router.post('/saques', ctrl.solicitarSaque);
 router.get('/saques', ctrl.meusSaques);

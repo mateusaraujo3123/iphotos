@@ -188,6 +188,21 @@ async function salvarPublico({ provedorNuvem, chave, buffer, contentType }) {
 }
 
 /**
+ * Baixa um objeto do bucket PRIVADO e devolve como Buffer — usado pra
+ * reprocessar uma foto original já existente (ex: regenerar a capa de um
+ * evento antigo sem marca d'água, sem precisar o fotógrafo subir de novo).
+ */
+async function baixarObjetoPrivado({ provedorNuvem, chave }) {
+  const { client, bucketPrivado } = resolverProvedor(provedorNuvem);
+  const resposta = await client.send(new GetObjectCommand({ Bucket: bucketPrivado, Key: chave }));
+  const chunks = [];
+  for await (const chunk of resposta.Body) {
+    chunks.push(chunk);
+  }
+  return Buffer.concat(chunks);
+}
+
+/**
  * Gera uma URL assinada e temporária (expira em `expiresInSeconds`) para
  * o cliente baixar o arquivo ORIGINAL do bucket privado após o pagamento.
  */
@@ -227,6 +242,7 @@ module.exports = {
   resolverProvedor,
   salvarOriginalPrivado,
   salvarPublico,
+  baixarObjetoPrivado,
   gerarUrlAssinadaDownload,
   excluirObjetos,
 };

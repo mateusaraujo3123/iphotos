@@ -10,6 +10,7 @@ router.use(exigirAdmin);
 router.post('/pagamentos/registrar-webhook-efi', ctrl.registrarWebhookEfi);
 
 router.get('/eventos', ctrl.listarTodosEventos);
+router.post('/eventos/:id/regenerar-capa', ctrl.regenerarCapaEvento);
 router.put('/eventos/:id/categoria', ctrl.realocarCategoriaEvento);
 router.delete('/eventos/:id', ctrl.deletarEvento);
 
@@ -26,6 +27,7 @@ router.post('/cupons', ctrl.criarCupom);
 router.get('/cupons', ctrl.listarCupons);
 router.put('/cupons/:id/status', ctrl.alternarStatusCupom);
 
+router.get('/pedidos', ctrl.listarTodosPedidos);
 router.get('/saques', ctrl.listarSaques);
 router.put('/saques/:id/pagar', ctrl.marcarSaquePago);
 router.put('/saques/:id/recusar', ctrl.recusarSaque);

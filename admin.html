@@ -116,6 +116,22 @@
           </table>
         </div>
 
+        <!-- HISTÓRICO DE SAQUES (todos os status) -->
+        <div class="card-admin">
+          <h2>Histórico de Saques</h2>
+          <div id="lista-historico-saques-admin" style="max-height:280px; overflow-y:auto;">
+            <p style="font-size:13px; color:#64748b;">Carregando...</p>
+          </div>
+        </div>
+
+        <!-- HISTÓRICO DE COMPRAS DA PLATAFORMA -->
+        <div class="card-admin">
+          <h2>Histórico de Compras</h2>
+          <div id="lista-historico-compras-admin" style="max-height:340px; overflow-y:auto;">
+            <p style="font-size:13px; color:#64748b;">Carregando...</p>
+          </div>
+        </div>
+
         <!-- GERENCIAMENTO DE FOTÓGRAFOS: MULTI-CLOUD + TAXA INDIVIDUAL -->
         <div class="card-admin">
           <h2>Gerenciamento de Fotógrafos Ativos</h2>
@@ -327,7 +343,10 @@
             </td>
             <td><span style="font-weight:600;color:#475569;">${new Date(ev.dataRealizacao).toLocaleDateString('pt-BR')}</span></td>
             <td><span style="font-size:13px;color:#64748b;">${ev.fotografo?.nome || '—'}</span></td>
-            <td><button class="btn-deletar-evento-banco" onclick="deletarEventoPermanenteDoBanco('${ev.id}', '${ev.titulo.replace(/'/g, "\\'")}')">🗑️</button></td>
+            <td>
+              <button class="btn-alterar-senha-admin" onclick="regenerarCapaEvento('${ev.id}', this)" title="Corrige a capa se ela estiver com marca d'água">🖼 Corrigir capa</button>
+              <button class="btn-deletar-evento-banco" onclick="deletarEventoPermanenteDoBanco('${ev.id}', '${ev.titulo.replace(/'/g, "\\'")}')">🗑️</button>
+            </td>
           </tr>
         `).join('') || '<tr><td colspan="5" style="text-align:center;color:#64748b;padding:15px;">Nenhum evento cadastrado.</td></tr>';
       } catch (err) {
@@ -354,6 +373,21 @@
         carregarEventosParaModeracao();
       } catch (err) {
         alert(err.message);
+      }
+    }
+
+    async function regenerarCapaEvento(id, botao) {
+      const textoOriginal = botao.innerText;
+      botao.disabled = true;
+      botao.innerText = 'Corrigindo...';
+      try {
+        await apiFetchAdmin(`/admin/eventos/${id}/regenerar-capa`, { method: 'POST' });
+        botao.innerText = '✅ Capa corrigida';
+        setTimeout(() => { botao.innerText = textoOriginal; botao.disabled = false; }, 2000);
+      } catch (err) {
+        alert(err.message);
+        botao.innerText = textoOriginal;
+        botao.disabled = false;
       }
     }
 
@@ -389,8 +423,58 @@
       try {
         await apiFetchAdmin(`/admin/saques/${id}/pagar`, { method: 'PUT' });
         carregarFilaSaquesAdmin();
+        carregarHistoricoSaquesAdmin();
       } catch (err) {
         alert(err.message);
+      }
+    }
+
+    const ROTULO_STATUS_SAQUE_ADMIN = { PENDENTE: '⏳ Pendente', PAGO: '✅ Pago', RECUSADO: '❌ Recusado' };
+
+    async function carregarHistoricoSaquesAdmin() {
+      const container = document.getElementById('lista-historico-saques-admin');
+      try {
+        const saques = await apiFetchAdmin('/admin/saques');
+        if (!saques.length) {
+          container.innerHTML = '<p style="font-size:13px; color:#64748b;">Nenhum saque registrado ainda.</p>';
+          return;
+        }
+        container.innerHTML = saques.map(s => `
+          <div style="display:flex; align-items:center; justify-content:space-between; padding:8px 0; border-bottom:1px solid #f1f5f9;">
+            <div>
+              <p style="font-size:13px; font-weight:600;">${s.fotografo.nome} — R$ ${Number(s.valor).toFixed(2)}</p>
+              <p style="font-size:11px; color:#64748b;">Solicitado em ${new Date(s.solicitadoEm).toLocaleDateString('pt-BR')}${s.pagoEm ? ' • Pago em ' + new Date(s.pagoEm).toLocaleDateString('pt-BR') : ''}</p>
+            </div>
+            <span style="font-size:12px; font-weight:600;">${ROTULO_STATUS_SAQUE_ADMIN[s.status] || s.status}</span>
+          </div>
+        `).join('');
+      } catch (err) {
+        container.innerHTML = `<p style="font-size:13px; color:#e63946;">${err.message}</p>`;
+      }
+    }
+
+    async function carregarHistoricoComprasAdmin() {
+      const container = document.getElementById('lista-historico-compras-admin');
+      try {
+        const pedidos = await apiFetchAdmin('/admin/pedidos');
+        if (!pedidos.length) {
+          container.innerHTML = '<p style="font-size:13px; color:#64748b;">Nenhuma compra confirmada ainda.</p>';
+          return;
+        }
+        container.innerHTML = pedidos.map(p => `
+          <div style="padding:8px 0; border-bottom:1px solid #f1f5f9;">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <strong style="font-size:13px;">${p.cliente.nome}</strong>
+              <strong style="font-size:13px; color:#166534;">R$ ${Number(p.total).toFixed(2)}</strong>
+            </div>
+            <p style="font-size:11px; color:#64748b;">
+              ${p.itens.length} foto(s) • ${p.itens[0]?.foto?.evento?.titulo || ''} (${p.itens[0]?.foto?.evento?.fotografo?.nome || ''})
+              • ${p.pagoEm ? new Date(p.pagoEm).toLocaleDateString('pt-BR') : ''}
+            </p>
+          </div>
+        `).join('');
+      } catch (err) {
+        container.innerHTML = `<p style="font-size:13px; color:#e63946;">${err.message}</p>`;
       }
     }
 
@@ -497,6 +581,8 @@
     function carregarTudo() {
       carregarTemaSalvo();
       carregarFilaSaquesAdmin();
+      carregarHistoricoSaquesAdmin();
+      carregarHistoricoComprasAdmin();
       carregarEventosParaModeracao();
       carregarUsuariosParaGerenciamento();
       carregarCupons();

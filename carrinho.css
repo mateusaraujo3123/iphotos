@@ -193,8 +193,147 @@ body {
   display: none;
   text-align: center;
   margin-top: 24px;
-  padding-top: 24px;
-  border-top: 2px dashed #cbd5e1;
+  padding: 20px;
+  border-radius: 12px;
+  background: linear-gradient(180deg, #f0fdfa 0%, #ffffff 100%);
+  border: 1px solid #99e9f2;
+}
+
+.pix-selo-sucesso {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #ecfdf5;
+  color: #15803d;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 6px 14px;
+  border-radius: 999px;
+  margin-bottom: 16px;
+}
+
+.pix-selo-icone {
+  background: #22c55e;
+  color: #fff;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+}
+
+.pix-qrcode-moldura {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 12px;
+  width: fit-content;
+  margin: 0 auto;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+
+.pix-qrcode-moldura img {
+  width: 180px;
+  height: 180px;
+  display: block;
+}
+
+.pix-instrucao {
+  font-size: 13px;
+  color: #64748b;
+  margin: 16px 0 10px;
+}
+
+.pix-copia-cola-caixa {
+  display: flex;
+  gap: 8px;
+  align-items: stretch;
+}
+
+.pix-copia-cola-caixa input {
+  flex: 1;
+  min-width: 0;
+  padding: 12px;
+  font-size: 13px;
+  text-align: left;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: #f8fafc;
+  outline: none;
+  color: #334155;
+  font-family: monospace;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pix-btn-copiar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 16px;
+  background-color: var(--cor-primaria);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 13px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background-color 0.2s, transform 0.1s;
+}
+
+.pix-btn-copiar:active {
+  transform: scale(0.96);
+}
+
+.pix-btn-copiar.copiado {
+  background-color: #16a34a;
+}
+
+.pix-status-aguardando {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 18px;
+}
+
+.pix-status-aguardando p {
+  font-size: 13px;
+  color: #64748b;
+  margin: 0;
+}
+
+.pix-spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid #cbd5e1;
+  border-top-color: var(--cor-primaria);
+  border-radius: 50%;
+  animation: girar-spinner 0.8s linear infinite;
+}
+
+@keyframes girar-spinner {
+  to { transform: rotate(360deg); }
+}
+
+/* Celular: código copia-e-cola vira 2 linhas (input em cima, botão embaixo
+   ocupando a largura toda) pra não ficar apertado */
+@media (max-width: 480px) {
+  .pix-copia-cola-caixa {
+    flex-direction: column;
+  }
+  .pix-btn-copiar {
+    padding: 12px;
+    justify-content: center;
+  }
+  .pix-qrcode-moldura img {
+    width: 160px;
+    height: 160px;
+  }
 }
 
 .qr-code-placeholder {

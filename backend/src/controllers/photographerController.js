@@ -1,6 +1,6 @@
 const { v4: uuid } = require('uuid');
 const prisma = require('../config/db');
-const { comprimirEAplicarMarcaDagua } = require('../utils/watermark');
+const { comprimirEAplicarMarcaDagua, apenasComprimir } = require('../utils/watermark');
 const { salvarOriginalPrivado, salvarPublico, excluirObjetos } = require('../config/storage');
 
 const DIAS_EXPIRACAO = parseInt(process.env.DIAS_EXPIRACAO_EVENTO || '30', 10);
@@ -130,6 +130,8 @@ async function enviarLoteFotos(req, res) {
 
   const fotosSalvas = [];
   const arquivosIgnoradosPorLimite = [];
+  let precisaGerarCapaLimpa = !evento.fotoCapaUrl;
+  let urlCapaLimpaGerada = null;
 
   for (const arquivo of arquivos) {
     // Verificação conservadora: usa o tamanho do original (o maior dos dois
@@ -152,7 +154,7 @@ async function enviarLoteFotos(req, res) {
       contentType: arquivo.mimetype,
     });
 
-    // 2) compressão + marca d'água -> bucket público
+    // 2) compressão + marca d'água -> bucket público (fotos da galeria/venda)
     const bufferComprimido = await comprimirEAplicarMarcaDagua(arquivo.buffer, idFoto);
     const urlPublica = await salvarPublico({
       provedorNuvem: fotografo.provedorNuvem,
@@ -161,7 +163,23 @@ async function enviarLoteFotos(req, res) {
       contentType: 'image/jpeg',
     });
 
-    const tamanhoBytes = arquivo.buffer.length + bufferComprimido.length;
+    let tamanhoBytes = arquivo.buffer.length + bufferComprimido.length;
+
+    // 2.1) capa do evento (index.html) — SEM marca d'água, gerada só uma
+    // vez, a partir da primeira foto do evento (se ele ainda não tiver capa)
+    if (precisaGerarCapaLimpa) {
+      const bufferCapaLimpa = await apenasComprimir(arquivo.buffer);
+      const chaveCapa = `publico/${eventoId}/capa-${idFoto}.jpg`;
+      urlCapaLimpaGerada = await salvarPublico({
+        provedorNuvem: fotografo.provedorNuvem,
+        chave: chaveCapa,
+        buffer: bufferCapaLimpa,
+        contentType: 'image/jpeg',
+      });
+      tamanhoBytes += bufferCapaLimpa.length;
+      precisaGerarCapaLimpa = false;
+    }
+
     usadoBytes += tamanhoBytes;
 
     // 3) persiste no banco
@@ -177,11 +195,12 @@ async function enviarLoteFotos(req, res) {
     fotosSalvas.push(foto);
   }
 
-  // Define a primeira foto enviada como capa do evento, se ainda não houver
-  if (!evento.fotoCapaUrl && fotosSalvas.length) {
+  // Define a capa do evento: a versão LIMPA (sem marca d'água) gerada acima
+  // — nunca a foto da galeria, que tem marca d'água de propósito.
+  if (urlCapaLimpaGerada) {
     await prisma.evento.update({
       where: { id: eventoId },
-      data: { fotoCapaUrl: fotosSalvas[0].urlPublica },
+      data: { fotoCapaUrl: urlCapaLimpaGerada },
     });
   }
 
@@ -345,6 +364,37 @@ async function solicitarSaque(req, res) {
 /**
  * GET /api/fotografo/saques — histórico de solicitações do fotógrafo logado
  */
+/**
+ * GET /api/fotografo/vendas
+ * Histórico de vendas do fotógrafo — cada foto vendida (pedido PAGO),
+ * com evento, valor e data, pra dar transparência de quando/quanto vendeu.
+ */
+async function minhasVendas(req, res) {
+  const itens = await prisma.itemPedido.findMany({
+    where: {
+      pedido: { status: 'PAGO' },
+      foto: { evento: { fotografoId: req.usuario.id } },
+    },
+    include: {
+      foto: { include: { evento: { select: { titulo: true, categoria: true } } } },
+      pedido: { include: { cliente: { select: { nome: true } } } },
+    },
+    orderBy: { pedido: { pagoEm: 'desc' } },
+  });
+
+  res.json(
+    itens.map((item) => ({
+      id: item.id,
+      preco: item.preco,
+      urlPublica: item.foto.urlPublica,
+      eventoTitulo: item.foto.evento.titulo,
+      eventoCategoria: item.foto.evento.categoria,
+      clienteNome: item.pedido.cliente.nome,
+      pagoEm: item.pedido.pagoEm,
+    }))
+  );
+}
+
 async function meusSaques(req, res) {
   const saques = await prisma.solicitacaoSaque.findMany({
     where: { fotografoId: req.usuario.id },
@@ -362,6 +412,7 @@ module.exports = {
   meusEventos,
   detalharMeuEvento,
   faturamento,
+  minhasVendas,
   atualizarPerfil,
   solicitarSaque,
   meusSaques,
