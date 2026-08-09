@@ -7,6 +7,8 @@ router.post('/login', ctrl.loginAdmin);
 
 router.use(exigirAdmin);
 
+router.post('/pagamentos/registrar-webhook-efi', ctrl.registrarWebhookEfi);
+
 router.get('/eventos', ctrl.listarTodosEventos);
 router.put('/eventos/:id/categoria', ctrl.realocarCategoriaEvento);
 router.delete('/eventos/:id', ctrl.deletarEvento);

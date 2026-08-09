@@ -8,6 +8,26 @@ const { excluirObjetos, PROVEDORES_DISPONIVEIS } = require('../config/storage');
  * body: { usuario, senha }
  * Login por usuário + senha master (ADMIN_USERNAME / ADMIN_PASSWORD no .env).
  */
+/**
+ * POST /api/admin/pagamentos/registrar-webhook-efi
+ * Ação de configuração — roda uma vez (ou de novo se trocar de domínio)
+ * pra avisar a Efí qual URL chamar quando um Pix for pago.
+ */
+async function registrarWebhookEfi(req, res) {
+  try {
+    const { registrarWebhook } = require('../utils/pixEfi');
+    const urlBase = process.env.BACKEND_PUBLIC_URL;
+    if (!urlBase) {
+      return res.status(400).json({ erro: 'Configure BACKEND_PUBLIC_URL no .env/Railway antes (a URL pública do seu backend).' });
+    }
+    const urlWebhook = `${urlBase}/api/pagamentos/webhook`;
+    await registrarWebhook(urlWebhook);
+    res.json({ mensagem: `Webhook registrado na Efí com sucesso: ${urlWebhook}` });
+  } catch (err) {
+    res.status(500).json({ erro: err.message });
+  }
+}
+
 async function loginAdmin(req, res) {
   const { usuario, senha } = req.body;
   const usuarioOk = usuario === (process.env.ADMIN_USERNAME || 'admin');
@@ -319,6 +339,7 @@ async function atualizarConfig(req, res) {
 
 module.exports = {
   loginAdmin,
+  registrarWebhookEfi,
   listarTodosEventos,
   realocarCategoriaEvento,
   deletarEvento,
