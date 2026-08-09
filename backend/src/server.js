@@ -4,6 +4,21 @@ const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 
+// ============================================================
+// REDE DE SEGURANÇA GLOBAL: por padrão, o Node.js DERRUBA o processo
+// inteiro quando uma Promise rejeitada não é tratada em algum lugar
+// (ex: um provedor de pagamento mal configurado disparando uma exceção
+// dentro de uma rota sem try/catch). Isso NUNCA deve tirar o site do ar
+// inteiro — só a requisição que deu problema deveria falhar. Logamos o
+// erro e seguimos rodando.
+// ============================================================
+process.on('unhandledRejection', (motivo) => {
+  console.error('[unhandledRejection] Uma operação assíncrona falhou sem tratamento — o servidor CONTINUA no ar:', motivo);
+});
+process.on('uncaughtException', (erro) => {
+  console.error('[uncaughtException] Erro não capturado — o servidor CONTINUA no ar:', erro);
+});
+
 const authRoutes = require('./routes/authRoutes');
 const eventRoutes = require('./routes/eventRoutes');
 const photographerRoutes = require('./routes/photographerRoutes');
