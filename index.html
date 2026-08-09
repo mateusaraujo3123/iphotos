@@ -67,26 +67,42 @@
   <!-- SCRIPT DE INTERATIVIDADE, FILTRAGEM E ACESSOS DA API -->
   <script>
     // ============================================================
-    // CARROSSEL DO BANNER — cole aqui as URLs das suas imagens
-    // (até 10). Deixe a lista vazia [] pra manter o fundo azul normal.
-    // Exemplo:
-    // const imagensBannerHero = [
-    //   'assets/banner/foto1.jpg',
-    //   'assets/banner/foto2.jpg',
-    //   'assets/banner/foto3.jpg',
-    // ];
+    // CARROSSEL DO BANNER — 100% automático, sem precisar editar código.
+    // Pra usar: salve suas fotos (até 10) na pasta assets/banner/ do
+    // repositório com estes nomes exatos:
+    //   assets/banner/1.jpg
+    //   assets/banner/2.jpg
+    //   assets/banner/3.jpg
+    //   ... até assets/banner/10.jpg
+    // Não precisa usar todas as 10 — o site detecta sozinho quais existem
+    // e ignora as que faltarem. Sem nenhuma imagem, continua o azul normal.
     // ============================================================
- const imagensBannerHero = [
-  'assets/banner/foto1.jpg',
-];
-    
     const INTERVALO_TROCA_BANNER_MS = 4500;
 
-    function iniciarCarrosselHero() {
-      if (!imagensBannerHero.length) return; // sem imagens = mantém o azul padrão
+    function testarImagem(url) {
+      return new Promise((resolve) => {
+        const img = new Image();
+        img.onload = () => resolve(url);
+        img.onerror = () => resolve(null);
+        img.src = url;
+      });
+    }
+
+    async function detectarImagensBanner() {
+      const testes = [];
+      for (let i = 1; i <= 10; i++) {
+        testes.push(testarImagem(`assets/banner/${i}.jpg`));
+      }
+      const resultados = await Promise.all(testes);
+      return resultados.filter(Boolean); // remove as que não existem
+    }
+
+    async function iniciarCarrosselHero() {
+      const imagensBannerHero = await detectarImagensBanner();
+      if (!imagensBannerHero.length) return; // nenhuma imagem encontrada = mantém o azul padrão
 
       const container = document.getElementById('hero-slides');
-      container.innerHTML = imagensBannerHero.slice(0, 10).map((url, i) =>
+      container.innerHTML = imagensBannerHero.map((url, i) =>
         `<div class="hero-slide${i === 0 ? ' ativo' : ''}" style="background-image:url('${url}')"></div>`
       ).join('');
       document.querySelector('.hero').classList.add('hero-com-imagem');
