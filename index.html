@@ -91,7 +91,7 @@
     async function detectarImagensBanner() {
       const testes = [];
       for (let i = 1; i <= 10; i++) {
-        testes.push(testarImagem(`assets/banner/${i}.JPG`));
+        testes.push(testarImagem(`assets/banner/${i}.jpg`));
       }
       const resultados = await Promise.all(testes);
       return resultados.filter(Boolean); // remove as que não existem
